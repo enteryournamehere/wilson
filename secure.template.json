@@ -1,0 +1,40 @@
+{
+    "token": "discord bot token",
+    "dbName": "database name",
+    "dbUser": "database username",
+    "dbPassword": "database password",
+    "prefix": "bot prefix",
+    "owners": ["discord id here"],
+    "youtube": "youtube api key",
+    "twitter": {
+        "access_token_key": "xyz",
+        "accesS_token_secret": "xyz",
+        "consumer_key": "xyz",
+        "consumer_secret": "xyz"
+    },
+    "instagram": {
+        "username": "<--",
+        "password": "instagram stuff doesn't work anyway"
+    },
+    "twitch": {
+        "secret": "not used atm",
+        "id": "idididid",
+        "callback": "uri"
+    },
+    "webhooks": {
+		"youtube": "discord webhook link",
+		"twitter": "discord webhook link",
+		"instagram": "discord webhook link"
+    },
+    "roles": {
+		"youtube": "role id",
+		"twitter": "r o l e   i d",
+		"instagram": "r  o  l  e     i  d"
+    },
+    "fetches": {
+        "youtube": true,
+        "twitter": true,
+        "instagram": false
+    },
+    "updateguild": "where updates should be sent"
+}

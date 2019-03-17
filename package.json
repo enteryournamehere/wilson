@@ -1,0 +1,31 @@
+{
+  "name": "winterbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "git+https://github.com/discordjs/discord.js.git",
+    "discord.js-commando": "git+ssh://git@bitbucket.org/n13k9/wilson-djsc.git",
+    "eslint": "^4.19.1",
+    "eslint-config-google": "^0.9.1",
+    "ffmpeg-binaries": "^3.2.2-3",
+    "insta-scraper": "^1.0.2",
+    "jsdom": "^11.11.0",
+    "mysql2": "^1.5.3",
+    "node-opus": "^0.3.0",
+    "request": "^2.87.0",
+    "request-promise": "^4.2.2",
+    "request-promise-native": "^1.0.5",
+    "sequelize": "^4.37.10",
+    "twitch-webhook": "^1.2.4",
+    "twitter": "^1.7.1",
+    "url": "^0.11.0",
+    "ytdl-core": "^0.20.4",
+    "zombie": "^6.1.2"
+  }
+}

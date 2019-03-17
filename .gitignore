@@ -1,0 +1,15 @@
+node_modules
+secure.json
+wintergatan2000
+instagram-scraper.log
+latestInstagram.txt
+latestTwitter.txt
+latestYoutube.txt
+
+# old unused files
+instagram.js
+instagram2.js
+twitter.js
+youtube.js
+twitch.js
+twee.js
