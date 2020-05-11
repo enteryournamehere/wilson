@@ -148,7 +148,7 @@ roleMap.set('418718491781365761', '651548806533349426');    // gamer
 roleMap.set('418683641850232833', '651548778746216448');    // GFX designer
 roleMap.set('418726789444272129', '651548709527617557');    // musician
 
-winterbot.on('guildMemberAdd', member => {
+Winterbot.on('guildMemberAdd', member => {
     /**
      * transfer roles from old server member to new server member
      */
