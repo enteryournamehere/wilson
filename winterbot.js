@@ -161,6 +161,23 @@ Winterbot.on('guildMemberAdd', member => {
     });
 });
 
+const mmxTeamRoleId = '650660016755310592';
+const ccAgreedRoleId = '709386821850759178';
+const mmxTeamCcAgreedRoleId = '709406460450177094';
+
+Winterbot.on('guildMemberUpdate', (oldMember, newMember) => {
+	// if the roles have changed, do stuff
+	if (oldMember.roles.cache.keys() != newMember.roles.cache.keys()) {
+		let roles = newMember.roles.cache.keyArray(); // get updated roles
+		// if member has both roles and not the combined role, add combined role
+		if (roles.includes(mmxTeamRoleId) && roles.includes(ccAgreedRoleId) && !roles.includes(mmxTeamCcAgreedRoleId)) 
+			newMember.roles.add(mmxTeamCcAgreedRoleId);
+		// if member does not have both roles but has combined role, remove combined role
+		else if (roles.includes(mmxTeamCcAgreedRoleId)) 
+			newMember.roles.remove(mmxTeamCcAgreedRoleId);
+	}
+});
+
 const messageBridge = {
 	guilds: secure.guildsToBridge,
 	getChannels: (guild) => {
