@@ -173,7 +173,7 @@ Winterbot.on('guildMemberUpdate', (oldMember, newMember) => {
 		if (roles.includes(mmxTeamRoleId) && roles.includes(ccAgreedRoleId) && !roles.includes(mmxTeamCcAgreedRoleId)) 
 			newMember.roles.add(mmxTeamCcAgreedRoleId);
 		// if member does not have both roles but has combined role, remove combined role
-		else if (roles.includes(mmxTeamCcAgreedRoleId)) 
+		else if ((!roles.includes(mmxTeamRoleId) || !roles.includes(ccAgreedRoleId)) && roles.includes(mmxTeamCcAgreedRoleId)) 
 			newMember.roles.remove(mmxTeamCcAgreedRoleId);
 	}
 });
