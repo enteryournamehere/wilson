@@ -216,7 +216,7 @@ if (secure.guildsToBridge && secure.guildsToBridge.length && secure.guildsToBrid
 		if (!channelPair) return;
 		const otherChannel = channelPair.find(obj => obj.channel !== msg.channel.id);
 		otherChannel.webhook.send(msg.content, {
-			username: msg.author.username,
+			username: msg.member.nickname ? `${msg.member.nickname} (${msg.author.username}#${msg.author.discriminator})` : `${msg.author.username}#${msg.author.discriminator}`,
 			avatarURL: msg.author.avatarURL(),
 			embeds: msg.embeds,
 			files: msg.attachments.array(),
