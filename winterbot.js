@@ -48,6 +48,7 @@ Winterbot.registry
 	.registerDefaultCommands({
 		ping: false,
 		prefix: false,
+		unknownCommand: false,
 	})
 	.registerCommandsIn(path.join(__dirname, 'commands'));
 
