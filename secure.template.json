@@ -32,9 +32,10 @@
 		"instagram": "r  o  l  e     i  d"
     },
     "fetches": {
-        "youtube": true,
-        "twitter": true,
+        "youtube": false,
+        "twitter": false,
         "instagram": false
     },
+    "guildsToBridge": [],
     "updateguild": "where updates should be sent"
 }

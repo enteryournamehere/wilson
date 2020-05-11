@@ -20,10 +20,14 @@ const Winterbot = new Commando.Client({
 	disabledEvents: ['TYPING_START'],
 });
 
+Winterbot.dispatcher.addInhibitor(msg => {
+	if (msg.webhookID) return 'nope';
+	return false;
+});
+
 const Webhook = require('./webhook.js');
 const twitterWebhook = new Webhook(updatesConfig.webhooks.twitter);
 const youtubeWebhook = new Webhook(updatesConfig.webhooks.youtube);
-// const instagramWebhook = new Webhook(updatesConfig.webhooks.instagram);
 
 database.start();
 
@@ -50,42 +54,29 @@ function twitter2Fetch() {
 	Winterbot.fetches.twitter.last = Date.now();
 	require('./twitter2.js').fetch().then((x) => {
 		if (!x.new) return;
-		Winterbot.guilds.get(updatesConfig.guild).roles.get(updatesConfig.roles.twitter).setMentionable(true).then(() => {
-			setTimeout(function() {
-				twitterWebhook.send(`<@&${updatesConfig.roles.twitter}>`, x.embed).catch(() => {}).then(() => {
-					updates.addUpdate(
-						'twitter',
-						x.postid,
-						x.time,
-					);
-					setTimeout(function() {
-						Winterbot.guilds.get(updatesConfig.guild).roles.get(updatesConfig.roles.twitter).setMentionable(false);
-					}, 1000);
-				});
-			}, 1000);
+		twitterWebhook.send(`<@&${updatesConfig.roles.twitter}>`, x.embed).catch(() => { }).then(() => {
+			updates.addUpdate(
+				'twitter',
+				x.postid,
+				x.time,
+			);
 		});
 	}).catch(e => console.log(e)).then(() => {
 		setTimeout(twitter2Fetch, 10 * 60 * 1000);
 	});
 }
 
+
 function youtube2Fetch() {
 	Winterbot.fetches.youtube.last = Date.now();
 	require('./youtube2.js').fetch().then((x) => {
 		if (!x.new) return;
-		Winterbot.guilds.get(updatesConfig.guild).roles.get(updatesConfig.roles.youtube).setMentionable(true).then(() => {
-			setTimeout(function() {
-				youtubeWebhook.send(`<@&${updatesConfig.roles.youtube}>`, x.embed).catch(() => {}).then(() => {
-					updates.addUpdate(
-						'youtube',
-						x.postid,
-						x.time,
-					);
-					setTimeout(function() {
-						Winterbot.guilds.get(updatesConfig.guild).roles.get(updatesConfig.roles.youtube).setMentionable(false);
-					}, 1000);
-				});
-			}, 1000);
+		youtubeWebhook.send(`<@&${updatesConfig.roles.youtube}>`, x.embed).catch(() => { }).then(() => {
+			updates.addUpdate(
+				'youtube',
+				x.postid,
+				x.time,
+			);
 		});
 	}).catch(e => console.log(e)).then(() => {
 		setTimeout(youtube2Fetch, 5 * 60 * 1000);
@@ -106,35 +97,70 @@ Winterbot.fetches = {
 Winterbot.on('ready', () => {
 	Winterbot.dmManager = new (require('./utils/classes/DmManager.js'))(Winterbot);
 	console.log(`{green}Ready!`);
-	// if (secure.fetches.instagram) instagramFetch();
+});
+
+Winterbot.once('ready', () => {
 	if (secure.fetches.youtube) Winterbot.fetches.youtube.run();
 	if (secure.fetches.twitter) Winterbot.fetches.twitter.run();
-});
+})
 
 Winterbot.on('message', (msg) => {
 	if (!msg.author) return;
 	if (!msg.content.match(/https?:\/\//)) return;
 	msg.guild.members.fetch(msg.author).then((member) => {
 		const beenHereMinutes = (Date.now() - member.joinedTimestamp) / 1000 / 60;
-		if (beenHereMinutes < 30) {
-			msg.reply('please wait 30 minutes before sending links');
+		if (beenHereMinutes < 10) {
+			msg.reply('To prevent spam and bots, please wait 10 minutes before sending links');
 			msg.delete();
 		}
 	});
 });
 
-/*
-const music = require('./utils/models/music.js');
+const messageBridge = {
+	guilds: secure.guildsToBridge,
+	getChannels: (guild) => {
+		return Winterbot.guilds.cache.get(guild).channels.cache.map(x => { return { guild: guild, channel: x.id, name: x.name } });
+	},
+	pairs: [],
+}
 
-Winterbot.on('voiceStateUpdate', (oldMember, newMember) => {
-	if (!newMember.guild.me.voiceChannel) return;
-	if (newMember.guild.me.voiceChannel.members.filter(member => !member.user.bot && !member.deaf).size < 1 || newMember.guild.me.mute) {
-		console.log('{cyan}Left channel because no one is listening.');
-		// todo: make it send a message
-		music.stop(newMember.guild.id, Winterbot);
-	}
+if (secure.guildsToBridge && secure.guildsToBridge.length && secure.guildsToBridge.length == 2) Winterbot.once('ready', () => {
+	messageBridge.one = messageBridge.getChannels(messageBridge.guilds[0]);
+	messageBridge.two = messageBridge.getChannels(messageBridge.guilds[1]);
+	messageBridge.pairs = [];
+	messageBridge.one.forEach(channel => {
+		const other = messageBridge.two.find(secondChannel => secondChannel.name === channel.name);
+		if (other) messageBridge.pairs.push([channel, other]);
+	});
+
+	messageBridge.pairs.forEach(pair => {
+		pair.forEach(channelObj => {
+			const textChannel = Winterbot.guilds.cache.get(channelObj.guild).channels.cache.get(channelObj.channel);
+			textChannel.fetchWebhooks().then(webhooks => {
+				if (webhooks.first()) channelObj.webhook = webhooks.first();
+				else {
+					textChannel.createWebhook('MessageBridge', {})
+				}
+			})
+		})
+	});
+
+	Winterbot.on('message', (msg) => {
+		if (msg.webhookID) return;
+		channelPair = messageBridge.pairs.find(pair => {
+			return pair.some(obj => obj.channel == msg.channel.id);
+		});
+		if (!channelPair) return;
+		const otherChannel = channelPair.find(obj => obj.channel !== msg.channel.id);
+		otherChannel.webhook.send(msg.content, {
+			username: msg.author.username,
+			avatarURL: msg.author.avatarURL(),
+			allowedMentions: {
+				parse: ["users"],
+			}
+		});
+	});
 });
-*/
 
 Winterbot.on('message', async (msg) => {
 	if (!msg.author.bot && !msg.content && msg.channel.type == 'dm') Winterbot.dmManager.newMessage(msg);
@@ -164,7 +190,7 @@ const colours = {
 
 const oldLog = console.log;
 
-global.console.log = function(...args) {
+global.console.log = function (...args) {
 	args = args.map(arg => {
 		if (typeof arg === 'string') {
 			/* eslint-disable guard-for-in */

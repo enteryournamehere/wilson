@@ -27,20 +27,6 @@ module.exports = class MentionCommand extends commando.Command {
 	}
 
 	async run(msg, {role, text}) {
-		/*
-		if (this.client.isOwner(msg.author) || msg.member.hasPermission('ADMINISTRATOR')) {
-			if (!role.editable) return msg.say('I can\'t edit that role.');
-			role.setMentionable(true).then(() => {
-				setTimeout(function() {
-					msg.say('<@&' + role.id + '> ' + text).then(() => {
-						setTimeout(function() {
-							role.setMentionable(false);
-						}, 1000);
-					});
-				}, 1000);
-			});
-			return null;
-		}*/
 		for (let i = 0; i<msg.member._roles.length; i++) {
 			const perm = await mentionaccess.checkPermission(msg.member._roles[i], role.id);
 			if (perm || this.client.isOwner(msg.author) || msg.member.hasPermission('ADMINISTRATOR')) {

@@ -39,7 +39,7 @@ module.exports = {
 	},
 
 	checkPermission: async function(fromrole, torole) {
-		return mentionaccess.find({
+		return mentionaccess.findOne({
 			where: {
 				fromrole: fromrole,
 				torole: torole,

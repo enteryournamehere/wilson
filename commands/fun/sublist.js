@@ -14,6 +14,6 @@ module.exports = class SublistCommand extends commando.Command {
 	}
 
 	async run(msg) {
-		subroles.getSubRoles().then(roles => msg.say('These roles are self-assignable: **' + roles.map(x => msg.guild.roles.get(x).name).join(', ') + '**'));
+		subroles.getSubRoles().then(roles => msg.say('These roles are self-assignable: **' + roles.map(x => msg.guild.roles.cache.get(x).name).join(', ') + '**'));
 	}
 };

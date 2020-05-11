@@ -89,7 +89,7 @@ class SequelizeProvider extends SettingProvider {
 			const guild = row.dataValues.guild !== '0' ? row.dataValues.guild : 'global';
 
 			this.settings.set(guild, settings);
-			if (guild !== 'global' && !client.guilds.has(row.dataValues.guild)) continue;
+			if (guild !== 'global' && !client.guilds.cache.has(row.dataValues.guild)) continue;
 			this.setupGuild(guild, settings);
 		}
 
@@ -105,14 +105,14 @@ class SequelizeProvider extends SettingProvider {
 			})
 			.set('commandRegister', (command) => {
 				for (const [guild, settings] of this.settings) {
-					if (guild !== 'global' && !client.guilds.has(guild)) continue;
-					this.setupGuildCommand(client.guilds.get(guild), command, settings);
+					if (guild !== 'global' && !client.guilds.cache.has(guild)) continue;
+					this.setupGuildCommand(client.guilds.cache.get(guild), command, settings);
 				}
 			})
 			.set('groupRegister', (group) => {
 				for (const [guild, settings] of this.settings) {
-					if (guild !== 'global' && !client.guilds.has(guild)) continue;
-					this.setupGuildGroup(client.guilds.get(guild), group, settings);
+					if (guild !== 'global' && !client.guilds.cache.has(guild)) continue;
+					this.setupGuildGroup(client.guilds.cache.get(guild), group, settings);
 				}
 			});
 		for (const [event, listener] of this.listeners) client.on(event, listener);
@@ -182,7 +182,7 @@ class SequelizeProvider extends SettingProvider {
 	 */
 	setupGuild(guild, settings) {
 		if (typeof guild !== 'string') throw new TypeError('The guild must be a guild ID or "global".');
-		guild = this.client.guilds.get(guild) || null;
+		guild = this.client.guilds.cache.get(guild) || null;
 
 		// Load the command prefix
 		if (typeof settings.prefix !== 'undefined') {

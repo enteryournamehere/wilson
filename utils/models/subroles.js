@@ -23,9 +23,10 @@ module.exports = {
 	},
 
 	setNotSub: async function(role) {
-		return subroles.upsert({
-			role: role,
-			sub: false,
+		return subroles.destroy({
+			where: {
+				role: role,
+			}
 		});
 	},
 
