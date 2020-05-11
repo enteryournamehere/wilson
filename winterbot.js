@@ -164,7 +164,7 @@ Winterbot.on('guildMemberAdd', member => {
 const messageBridge = {
 	guilds: secure.guildsToBridge,
 	getChannels: (guild) => {
-		return Winterbot.guilds.cache.get(guild).channels.cache.map(x => { return { guild: guild, channel: x.id, name: x.name } });
+		return Winterbot.guilds.cache.get(guild).channels.cache.filter(c => c.type === 'text').map(x => { return { guild: guild, channel: x.id, name: x.name } });
 	},
 	pairs: [],
 }
