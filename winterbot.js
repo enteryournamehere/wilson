@@ -152,13 +152,13 @@ Winterbot.on('guildMemberAdd', member => {
     /**
      * transfer roles from old server member to new server member
      */
-    if (member.guild.id != newGuildId) return;  // if join is not in new server, return
-    let oldMember = client.guilds.resolve(oldGuildId).members.resolve(member.id);
-    if (!oldMember) return; // if user is not in old server, return
-    oldMember.roles.cache.forEach((v, k) => {
-        let newId = roleMap.get(k);
-        if (newId) member.roles.add(newId); // if role is in map, add role
-    });
+	if (member.guild.id != newGuildId) return;  // if join is not in new server, return
+	let oldMember = Winterbot.guilds.resolve(oldGuildId).members.resolve(member.id);
+	if (!oldMember) return; // if user is not in old server, return
+	oldMember.roles.cache.forEach((v, k) => {
+		let newId = roleMap.get(k);
+		if (newId) member.roles.add(newId); // if role is in map, add role
+	});
 });
 
 const mmxTeamRoleId = '650660016755310592';
@@ -170,10 +170,10 @@ Winterbot.on('guildMemberUpdate', (oldMember, newMember) => {
 	if (oldMember.roles.cache.keys() != newMember.roles.cache.keys()) {
 		let roles = newMember.roles.cache.keyArray(); // get updated roles
 		// if member has both roles and not the combined role, add combined role
-		if (roles.includes(mmxTeamRoleId) && roles.includes(ccAgreedRoleId) && !roles.includes(mmxTeamCcAgreedRoleId)) 
+		if (roles.includes(mmxTeamRoleId) && roles.includes(ccAgreedRoleId) && !roles.includes(mmxTeamCcAgreedRoleId))
 			newMember.roles.add(mmxTeamCcAgreedRoleId);
 		// if member does not have both roles but has combined role, remove combined role
-		else if ((!roles.includes(mmxTeamRoleId) || !roles.includes(ccAgreedRoleId)) && roles.includes(mmxTeamCcAgreedRoleId)) 
+		else if ((!roles.includes(mmxTeamRoleId) || !roles.includes(ccAgreedRoleId)) && roles.includes(mmxTeamCcAgreedRoleId))
 			newMember.roles.remove(mmxTeamCcAgreedRoleId);
 	}
 });
@@ -217,6 +217,8 @@ if (secure.guildsToBridge && secure.guildsToBridge.length && secure.guildsToBrid
 		otherChannel.webhook.send(msg.content, {
 			username: msg.author.username,
 			avatarURL: msg.author.avatarURL(),
+			embeds: msg.embeds,
+			files: msg.attachments.array(),
 			allowedMentions: {
 				parse: ["users"],
 			}
