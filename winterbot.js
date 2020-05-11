@@ -236,7 +236,8 @@ Winterbot.on('guildMemberAdd', member => {
         .setAuthor(member.user.username + '#' + member.user.discriminator, member.user.avatarURL())
         .setDescription(member.user.id)
         .addField('Mention','<@' + member.user.id + '>')
-        .setColor([0,255,0])
+		.setColor([0,255,0])
+		.setFooter(`${member.guild.memberCount} members`)
         .setTimestamp(member.joinedTimestamp);
     member.guild.channels.cache.get('709038934851584011').send(embed);
 });
@@ -249,6 +250,7 @@ Winterbot.on('guildMemberRemove', member => {
         .setDescription(member.user.id)
         .addField('Mention','<@' + member.user.id + '>')
         .setColor([255,0,0])
+		.setFooter(`${member.guild.memberCount} members`)
         .setTimestamp(member.joinedTimestamp);
     member.guild.channels.cache.get('709038934851584011').send(embed);
 });
