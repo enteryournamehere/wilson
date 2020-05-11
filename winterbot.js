@@ -147,6 +147,7 @@ roleMap.set('418683762797314058', '651548957322903553');    // engineer
 roleMap.set('418718491781365761', '651548806533349426');    // gamer
 roleMap.set('418683641850232833', '651548778746216448');    // GFX designer
 roleMap.set('418726789444272129', '651548709527617557');    // musician
+roleMap.set('694608130629435432', '709469819874836541');    // john
 
 Winterbot.on('guildMemberAdd', member => {
     /**
