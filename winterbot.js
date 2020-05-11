@@ -116,6 +116,51 @@ Winterbot.on('message', (msg) => {
 	});
 });
 
+/**
+ * guild ids for role transfers
+ */
+const oldGuildId = '413366614747250708';
+const newGuildId = '649165975647682560';
+
+/**
+ * @typedef {String} oldRoleId
+ * @typedef {String} newRoleId
+ */
+
+/**
+ * map for role transfers from old server member to new server
+ * @type {Map<oldRoleId, newRoleId>}
+ */
+const roleMap = new Map();
+
+roleMap.set('413371714827714560', '649189528958926887');    // admin
+roleMap.set('413371743416352768', '649189529231556609');    // moderator
+roleMap.set('453171669004058625', '650660087731585111');    // youtube
+roleMap.set('609714412554682378', '650660149857615873');    // twitch
+roleMap.set('453171752667709441', '650660135894646804');    // twitter
+roleMap.set('465044582569082881', '708972931430088715');    // community
+roleMap.set('465043327201443841', '708988136398651482');    // minecraft
+roleMap.set('418726756501946368', '650707449610895362');    // artist
+roleMap.set('418683780476174336', '651548732696821776');    // craftsman
+roleMap.set('418683680567853056', '651548761092259891');    // developer
+roleMap.set('418683762797314058', '651548957322903553');    // engineer
+roleMap.set('418718491781365761', '651548806533349426');    // gamer
+roleMap.set('418683641850232833', '651548778746216448');    // GFX designer
+roleMap.set('418726789444272129', '651548709527617557');    // musician
+
+Winterbot.on('guildMemberAdd', member => {
+    /**
+     * transfer roles from old server member to new server member
+     */
+    if (member.guild.id != newGuildId) return;  // if join is not in new server, return
+    let oldMember = client.guilds.resolve(oldGuildId).members.resolve(member.id);
+    if (!oldMember) return; // if user is not in old server, return
+    oldMember.roles.cache.forEach((v, k) => {
+        let newId = roleMap.get(k);
+        if (newId) member.roles.add(newId); // if role is in map, add role
+    });
+});
+
 const messageBridge = {
 	guilds: secure.guildsToBridge,
 	getChannels: (guild) => {
