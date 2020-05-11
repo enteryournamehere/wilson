@@ -4,6 +4,7 @@ const path = require('path');
 const SequelizeProvider = require('./utils/Sequelize');
 const database = require('./database.js');
 const updates = require('./utils/models/updates.js');
+const { MessageEmbed } = require('discord.js');
 
 const updatesConfig = {
 	guild: secure.updateguild,
@@ -225,6 +226,30 @@ if (secure.guildsToBridge && secure.guildsToBridge.length && secure.guildsToBrid
 			}
 		});
 	});
+});
+
+Winterbot.on('guildMemberAdd', member => {
+	if (member.guild.id !== '649165975647682560') return;
+    const embed = new MessageEmbed()
+        .setTitle('Member Joined')
+        .setAuthor(member.user.username + '#' + member.user.discriminator, member.user.avatarURL())
+        .setDescription(member.user.id)
+        .addField('Mention','<@' + member.user.id + '>')
+        .setColor([0,255,0])
+        .setTimestamp(member.joinedTimestamp);
+    member.guild.channels.cache.get('709038934851584011').send(embed);
+});
+
+Winterbot.on('guildMemberRemove', member => {
+	if (member.guild.id !== '649165975647682560') return;
+    const embed = new MessageEmbed()
+        .setTitle('Member Left')
+        .setAuthor(member.user.username + '#' + member.user.discriminator, member.user.avatarURL())
+        .setDescription(member.user.id)
+        .addField('Mention','<@' + member.user.id + '>')
+        .setColor([255,0,0])
+        .setTimestamp(member.joinedTimestamp);
+    member.guild.channels.cache.get('709038934851584011').send(embed);
 });
 
 Winterbot.on('message', async (msg) => {
