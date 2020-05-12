@@ -14,14 +14,6 @@ module.exports = class SubscribeCommand extends commando.Command {
 				usages: 5,
 				duration: 10,
 			},
-			args: [
-				{
-					key: 'roles',
-					prompt: 'Which roles do you want? (One role name per message)',
-					type: 'role',
-					infinite: true,
-				},
-			],
 		});
 	}
 
