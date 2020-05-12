@@ -26,6 +26,7 @@ module.exports = class SubscribeCommand extends commando.Command {
 	}
 
 	async run(msg, {roles}) {
+		return msg.reply('This command is disabled, please see the message in #welcome (new server) to get roles!');
 		const names = [];
 		const nones = [];
 		let say = '';
