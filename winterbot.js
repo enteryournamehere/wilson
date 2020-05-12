@@ -212,6 +212,7 @@ if (secure.guildsToBridge && secure.guildsToBridge.length && secure.guildsToBrid
 
 	Winterbot.on('message', (msg) => {
 		if (msg.webhookID) return;
+		if (msg.channel.parent && (msg.channel.parent.id === '649172890360741922' || msg.channel.parent.id === '413366615300767764')) return;
 		channelPair = messageBridge.pairs.find(pair => {
 			return pair.some(obj => obj.channel == msg.channel.id);
 		});
@@ -223,14 +224,17 @@ if (secure.guildsToBridge && secure.guildsToBridge.length && secure.guildsToBrid
 			embeds: msg.embeds,
 			files: msg.attachments.array(),
 			allowedMentions: {
-				parse: ["users"],
+				parse: [],
 			}
 		});
 	});
 });
 
 Winterbot.on('guildMemberAdd', member => {
-	if (member.guild.id !== '649165975647682560') return;
+	const channel = '';
+	if (member.guild.id === '649165975647682560') channel = '709038934851584011';
+	if (member.guild.id === '413366614747250708') channel = '415891853079085066';
+	if (!channel) return;
     const embed = new MessageEmbed()
         .setTitle('Member Joined')
         .setAuthor(member.user.username + '#' + member.user.discriminator, member.user.avatarURL())
@@ -239,11 +243,14 @@ Winterbot.on('guildMemberAdd', member => {
 		.setColor([0,255,0])
 		.setFooter(`${member.guild.memberCount} members`)
         .setTimestamp(member.joinedTimestamp);
-    member.guild.channels.cache.get('709038934851584011').send(embed);
+    member.guild.channels.cache.get(channel).send(embed);
 });
 
 Winterbot.on('guildMemberRemove', member => {
-	if (member.guild.id !== '649165975647682560') return;
+	const channel = '';
+	if (member.guild.id === '649165975647682560') channel = '709038934851584011';
+	if (member.guild.id === '413366614747250708') channel = '415891853079085066';
+	if (!channel) return;
     const embed = new MessageEmbed()
         .setTitle('Member Left')
         .setAuthor(member.user.username + '#' + member.user.discriminator, member.user.avatarURL())
@@ -252,7 +259,7 @@ Winterbot.on('guildMemberRemove', member => {
         .setColor([255,0,0])
 		.setFooter(`${member.guild.memberCount} members`)
         .setTimestamp(member.joinedTimestamp);
-    member.guild.channels.cache.get('709038934851584011').send(embed);
+    member.guild.channels.cache.get(channel).send(embed);
 });
 
 Winterbot.on('message', async (msg) => {
