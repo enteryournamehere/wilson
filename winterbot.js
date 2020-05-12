@@ -230,38 +230,6 @@ if (secure.guildsToBridge && secure.guildsToBridge.length && secure.guildsToBrid
 	});
 });
 
-Winterbot.on('guildMemberAdd', member => {
-	const channel = '';
-	if (member.guild.id === '649165975647682560') channel = '709038934851584011';
-	if (member.guild.id === '413366614747250708') channel = '415891853079085066';
-	if (!channel) return;
-    const embed = new MessageEmbed()
-        .setTitle('Member Joined')
-        .setAuthor(member.user.username + '#' + member.user.discriminator, member.user.avatarURL())
-        .setDescription(member.user.id)
-        .addField('Mention','<@' + member.user.id + '>')
-		.setColor([0,255,0])
-		.setFooter(`${member.guild.memberCount} members`)
-        .setTimestamp(member.joinedTimestamp);
-    member.guild.channels.cache.get(channel).send(embed);
-});
-
-Winterbot.on('guildMemberRemove', member => {
-	const channel = '';
-	if (member.guild.id === '649165975647682560') channel = '709038934851584011';
-	if (member.guild.id === '413366614747250708') channel = '415891853079085066';
-	if (!channel) return;
-    const embed = new MessageEmbed()
-        .setTitle('Member Left')
-        .setAuthor(member.user.username + '#' + member.user.discriminator, member.user.avatarURL())
-        .setDescription(member.user.id)
-        .addField('Mention','<@' + member.user.id + '>')
-        .setColor([255,0,0])
-		.setFooter(`${member.guild.memberCount} members`)
-        .setTimestamp(member.joinedTimestamp);
-    member.guild.channels.cache.get(channel).send(embed);
-});
-
 Winterbot.on('message', async (msg) => {
 	if (!msg.author.bot && !msg.content && msg.channel.type == 'dm') Winterbot.dmManager.newMessage(msg);
 });
