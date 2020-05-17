@@ -215,10 +215,11 @@ function createStarboardEmbed(msg, count) {
 		description: msg.content,
 		footer: {
 			icon_url: 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/248/light-bulb_1f4a1.png',
-			text: count + ' - [Jump to message](' + msg.url + ')'
+			text: count
 		},
 		timestamp: msg.createdAt
 	});
+	embed.addField('Original message', '[Here](' + msg.url + ')')
 	if (msg.attachments.size) {
 		const att = msg.attachments.first();
 		const imgtypes = ['jpg', 'jpeg', 'png', 'gif'];
