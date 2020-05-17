@@ -4,6 +4,7 @@ const path = require('path');
 const SequelizeProvider = require('./utils/Sequelize');
 const database = require('./database.js');
 const updates = require('./utils/models/updates.js');
+const starboard = require('./utils/models/starboard.js');
 const { MessageEmbed } = require('discord.js');
 
 const updatesConfig = {
@@ -98,6 +99,10 @@ Winterbot.fetches = {
 
 Winterbot.on('ready', () => {
 	Winterbot.dmManager = new (require('./utils/classes/DmManager.js'))(Winterbot);
+
+	starboard.buildStarboardCache(Array.from(Winterbot.guilds.cache.keys())).then(c => {
+		console.log(`Cached ${c} starposts for ${Array.from(Winterbot.guilds.cache.keys()).length} guilds!`);
+	});
 	console.log(`{green}Ready!`);
 });
 
@@ -117,6 +122,139 @@ Winterbot.on('message', (msg) => {
 		}
 	});
 });
+
+const events = {
+	MESSAGE_REACTION_ADD: 'messageReactionAdd',
+	MESSAGE_REACTION_REMOVE: 'messageReactionRemove',
+};
+
+Winterbot.on('raw', async event => {
+	if (!events.hasOwnProperty(event.t)) return;
+	const { d: data } = event;
+	if (data.emoji.name !== '💡') return;
+
+	const user = await Winterbot.users.fetch(data.user_id);
+	const channel = await Winterbot.channels.fetch(data.channel_id) || await user.createDM();
+	if (!(await channel.messages.fetch(data.message_id))) return;
+
+	const message = await channel.messages.fetch(data.message_id);
+
+	const reaction = message.reactions.cache.get(data.emoji.name) || { count: 0, emoji: { name: '💡', id: null, animated: false }, message: message };
+
+	//Winterbot.emit(events[event.t], reaction, user);
+
+	if (event.t === 'MESSAGE_REACTION_ADD') {
+		if (!starboard.isEnabled(reaction.message)) return;
+		if (starboard.getLimit(reaction.message) > reaction.count) return;
+		if (starboard.isStarpost(reaction.message)) return;
+
+		const channelID = starboard.getChannel(reaction.message);
+
+		if (starboard.isStarposted(reaction.message)) {
+			return reaction.message.guild.channels.cache.get(channelID).messages.fetch(starboard.getStarpost(reaction.message)).then(msg => {
+				msg.edit({ embed: createStarboardEmbed(reaction.message, reaction.count) });
+			});
+		};
+
+		reaction.message.guild.channels.cache.get(channelID).send({ embed: createStarboardEmbed(reaction.message, reaction.count) }).then(msg => {
+			starboard.addStarpost(reaction.message, msg.id);
+		});
+	}
+	else if (event.t === 'MESSAGE_REACTION_REMOVE') {
+		if (!starboard.isEnabled(reaction.message)) return;
+		if (starboard.isStarpost(reaction.message)) return;
+		if (!starboard.isStarposted(reaction.message)) return;
+
+		const channelID = starboard.getChannel(reaction.message);
+		reaction.message.guild.channels.cache.get(channelID).messages.fetch(starboard.getStarpost(reaction.message)).then(msg => {
+			msg.edit({ embed: createStarboardEmbed(reaction.message, reaction.count) });
+		});
+	}
+
+});
+
+// Winterbot.on('messageReactionAdd', (reaction, user) => {
+// 	if (reaction.emoji.name !== '💡') return;
+// 	if (!starboard.isEnabled(reaction.message)) return;
+// 	if (starboard.getLimit(reaction.message) > reaction.count) return;
+// 	if (starboard.isStarpost(reaction.message)) return;
+
+// 	const channelID = starboard.getChannel(reaction.message);
+
+// 	if (starboard.isStarposted(reaction.message)) {
+// 		return reaction.message.guild.channels.cache.get(channelID).messages.fetch(starboard.getStarpost(reaction.message)).then(msg => {
+// 			msg.edit({embed: createStarboardEmbed(reaction.message, reaction.count)});
+// 		});
+// 	};
+
+// 	reaction.message.guild.channels.cache.get(channelID).send({embed: createStarboardEmbed(reaction.message, reaction.count)}).then(msg => {
+// 		starboard.addStarpost(reaction.message, msg.id);
+// 	});
+// });
+
+// Winterbot.on('messageReactionRemove', (reaction, user) => {
+// 	if (reaction.emoji.name !== '💡') return;
+// 	if (!starboard.isEnabled(reaction.message)) return;
+// 	if (starboard.isStarpost(reaction.message)) return;
+// 	if (!starboard.isStarposted(reaction.message)) return;
+
+// 	const channelID = starboard.getChannel(reaction.message);
+// 	reaction.message.guild.channels.cache.get(channelID).messages.fetch(starboard.getStarpost(reaction.message)).then(msg => {
+// 		msg.edit({embed: createStarboardEmbed(reaction.message, reaction.count)});
+// 	});
+// });
+
+function createStarboardEmbed(msg, count) {
+	const embed = new MessageEmbed({
+		author: {
+			name: msg.author.username + ' in #' + msg.channel.name,
+			icon_url: msg.author.avatarURL(),
+		},
+		description: msg.content,
+		footer: {
+			icon_url: 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/248/light-bulb_1f4a1.png',
+			text: count
+		},
+		timestamp: msg.createdAt
+	});
+	if (msg.attachments.size) {
+		const att = msg.attachments.first();
+		const imgtypes = ['jpg', 'jpeg', 'png', 'gif'];
+		if (att.name.includes('.') && imgtypes.includes(att.name.slice(att.name.lastIndexOf('.') + 1, att.name.length))) {
+			embed.setImage(att.url);
+		} else {
+			embed.addField('Attachments', msg.attachments.first().url);
+		}
+	} else if (msg.embeds.length) {
+		const msgEmbed = msg.embeds[0];
+		switch (msgEmbed.type) {
+			case 'image':
+			case 'gifv':
+				embed.setImage(msgEmbed.url);
+				break;
+			case 'link':
+				embed.setTitle(msgEmbed.title);
+				embed.setURL(msgEmbed.url);
+				embed.setThumbnail(msgEmbed.thumbnail.url);
+				break;
+			case 'rich':
+				if (msgEmbed.title) embed.setTitle(msgEmbed.title);
+				if (msgEmbed.description) embed.addField('Embed', msgEmbed.description);
+				/* eslint-disable guard-for-in */
+				for (const fieldIndex in msgEmbed.fields) {
+					const field = msgEmbed.fields[fieldIndex];
+					embed.addField(field.name, field.value, field.inline);
+				}
+				if (msgEmbed.thumbnail) embed.setThumbnail(msgEmbed.thumbnail.url);
+				if (msgEmbed.image) embed.setImage(msgEmbed.image.url);
+				break;
+			case 'video':
+				embed.setTitle(msgEmbed.title);
+		}
+	}
+	embed.setColor(msg.guild.me.displayColor || 16741829);
+	return embed;
+}
 
 /**
  * guild ids for role transfers
