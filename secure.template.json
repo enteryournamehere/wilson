@@ -37,5 +37,6 @@
         "instagram": false
     },
     "guildsToBridge": [],
+    "starboardCategory": "channel id",
     "updateguild": "where updates should be sent"
 }

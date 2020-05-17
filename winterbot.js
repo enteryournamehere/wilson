@@ -143,6 +143,8 @@ Winterbot.on('raw', async event => {
 
 	//Winterbot.emit(events[event.t], reaction, user);
 
+	if (!message.channel.parent || message.channel.parent.id !== secure.starboardCategory) return;
+
 	if (event.t === 'MESSAGE_REACTION_ADD') {
 		if (!starboard.isEnabled(reaction.message)) return;
 		if (starboard.getLimit(reaction.message) > reaction.count) return;
@@ -213,7 +215,7 @@ function createStarboardEmbed(msg, count) {
 		description: msg.content,
 		footer: {
 			icon_url: 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/248/light-bulb_1f4a1.png',
-			text: count
+			text: count + ' - [Jump to message](' + msg.url + ')'
 		},
 		timestamp: msg.createdAt
 	});
