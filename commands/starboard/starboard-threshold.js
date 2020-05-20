@@ -7,7 +7,7 @@ module.exports = class StarboardThresholdCommand extends Command {
 	constructor(client) {
 		super(client, {
 			name: 'starboard-threshold',
-			group: 'fun',
+			group: 'starboard',
 			memberName: 'starboard-threshold',
 			aliases: ['sb-t'],
 			description: 'Starboard posts messages with a certain number of 💡 reactions to a threshold. Use this command to set it up.',

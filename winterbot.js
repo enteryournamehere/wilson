@@ -42,6 +42,7 @@ Winterbot.registry
 		['config', 'Config commands'],
 		['mod', 'Mod commands'],
 		['owner', 'Owner commands'],
+		['starboard', 'Starboard (idea board) commands'],
 		// ['music', 'music commands'],
 	])
 	.registerDefaultTypes()
@@ -128,6 +129,11 @@ const events = {
 	MESSAGE_REACTION_REMOVE: 'messageReactionRemove',
 };
 
+
+// 
+// this entire starboard thing is a bit of a mess
+// i promise i'll clean it up sometime
+//
 Winterbot.on('raw', async event => {
 	if (!events.hasOwnProperty(event.t)) return;
 	const { d: data } = event;
@@ -147,30 +153,60 @@ Winterbot.on('raw', async event => {
 
 	if (event.t === 'MESSAGE_REACTION_ADD') {
 		if (!starboard.isEnabled(reaction.message)) return;
-		if (starboard.getLimit(reaction.message) > reaction.count) return;
 		if (starboard.isStarpost(reaction.message)) return;
 
-		const channelID = starboard.getChannel(reaction.message);
+		const tiers = starboard.getTiers(message.guild.id).sort((a,b) => b.limit - a.limit); // descending order
 
-		if (starboard.isStarposted(reaction.message)) {
-			return reaction.message.guild.channels.cache.get(channelID).messages.fetch(starboard.getStarpost(reaction.message)).then(msg => {
-				msg.edit({ embed: createStarboardEmbed(reaction.message, reaction.count) });
-			});
-		};
+		let tier = null;
+		
+		for (let i = 0; i < tiers.length; i++) {
+			if (reaction.count >= tiers[i].limit) {
+				tier = tiers[i];
+				break;
+			}
+		}
+		if (!tier) return;
 
-		reaction.message.guild.channels.cache.get(channelID).send({ embed: createStarboardEmbed(reaction.message, reaction.count) }).then(msg => {
-			starboard.addStarpost(reaction.message, msg.id);
-		});
+		// if (starboard.getLimit(reaction.message) > reaction.count) return;
+
+		const channelID = tier.channel;
+
+		const existingStarpost = starboard.isStarposted(reaction.message);
+		if (existingStarpost) {
+			oldTier = tiers.find(tier => {
+				return tier.channel === existingStarpost.starchannel;
+			})
+			if (existingStarpost.starchannel != channelID && (!oldTier || oldTier.limit < tier.limit)) {
+				reaction.message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(msg => {
+					msg.delete();
+				}).catch(e=>console.log(e));
+				reaction.message.guild.channels.cache.get(channelID).send({ embed: createStarboardEmbed(reaction.message, reaction.count) }).then(msg => {
+					starboard.addStarpost(reaction.message, msg.id, channelID);
+				}).catch(e=>console.log(e));;
+			}
+			else {
+				return reaction.message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(msg => {
+					msg.edit({ embed: createStarboardEmbed(reaction.message, reaction.count) });
+				}).catch(e=>console.log(e));;
+			}
+		}
+		else {
+			reaction.message.guild.channels.cache.get(channelID).send({ embed: createStarboardEmbed(reaction.message, reaction.count) }).then(msg => {
+				starboard.addStarpost(reaction.message, msg.id, channelID);
+			}).catch(e=>console.log(e));;
+		}
 	}
 	else if (event.t === 'MESSAGE_REACTION_REMOVE') {
 		if (!starboard.isEnabled(reaction.message)) return;
 		if (starboard.isStarpost(reaction.message)) return;
-		if (!starboard.isStarposted(reaction.message)) return;
-
-		const channelID = starboard.getChannel(reaction.message);
-		reaction.message.guild.channels.cache.get(channelID).messages.fetch(starboard.getStarpost(reaction.message)).then(msg => {
+		const existingStarpost = starboard.isStarposted(reaction.message);
+		if (!existingStarpost) return;
+		console.log('existingStarpost', existingStarpost)
+		console.log('message', message.id, message.channel);
+		const channelID = existingStarpost.starchannel;
+		reaction.message.guild.channels.cache.get(channelID).messages.fetch(existingStarpost.starpost).then(msg => {
 			msg.edit({ embed: createStarboardEmbed(reaction.message, reaction.count) });
-		});
+		}).catch(e=>console.log(e));;
 	}
 
 });

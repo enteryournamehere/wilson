@@ -7,7 +7,7 @@ module.exports = class StarboardCommand extends Command {
 	constructor(client) {
 		super(client, {
 			name: 'starboard',
-			group: 'fun',
+			group: 'starboard',
 			memberName: 'starboard',
 			aliases: ['sb'],
 			description: 'Disable or enable starboard.',

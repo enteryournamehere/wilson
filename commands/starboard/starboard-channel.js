@@ -7,7 +7,7 @@ module.exports = class StarboardChannelCommand extends Command {
 	constructor(client) {
 		super(client, {
 			name: 'starboard-channel',
-			group: 'fun',
+			group: 'starboard',
 			memberName: 'starboard-channel',
 			aliases: ['sb-c'],
 			description: 'Starboard posts messages with a certain number of ⭐ reactions to a channel. Use this command to set it up.',
