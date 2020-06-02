@@ -6,6 +6,7 @@ const database = require('./database.js');
 const updates = require('./utils/models/updates.js');
 const starboard = require('./utils/models/starboard.js');
 const { MessageEmbed } = require('discord.js');
+const translation = require('./utils/translation.js');
 
 const updatesConfig = {
 	guild: secure.updateguild,
@@ -155,10 +156,10 @@ Winterbot.on('raw', async event => {
 		if (!starboard.isEnabled(reaction.message)) return;
 		if (starboard.isStarpost(reaction.message)) return;
 
-		const tiers = starboard.getTiers(message.guild.id).sort((a,b) => b.limit - a.limit); // descending order
+		const tiers = starboard.getTiers(message.guild.id).sort((a, b) => b.limit - a.limit); // descending order
 
 		let tier = null;
-		
+
 		for (let i = 0; i < tiers.length; i++) {
 			if (reaction.count >= tiers[i].limit) {
 				tier = tiers[i];
@@ -179,21 +180,21 @@ Winterbot.on('raw', async event => {
 			if (existingStarpost.starchannel != channelID && (!oldTier || oldTier.limit < tier.limit)) {
 				reaction.message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(msg => {
 					msg.delete();
-				}).catch(e=>console.log(e));
+				}).catch(e => console.log(e));
 				reaction.message.guild.channels.cache.get(channelID).send({ embed: createStarboardEmbed(reaction.message, reaction.count) }).then(msg => {
 					starboard.addStarpost(reaction.message, msg.id, channelID);
-				}).catch(e=>console.log(e));;
+				}).catch(e => console.log(e));;
 			}
 			else {
 				return reaction.message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(msg => {
 					msg.edit({ embed: createStarboardEmbed(reaction.message, reaction.count) });
-				}).catch(e=>console.log(e));;
+				}).catch(e => console.log(e));;
 			}
 		}
 		else {
 			reaction.message.guild.channels.cache.get(channelID).send({ embed: createStarboardEmbed(reaction.message, reaction.count) }).then(msg => {
 				starboard.addStarpost(reaction.message, msg.id, channelID);
-			}).catch(e=>console.log(e));;
+			}).catch(e => console.log(e));;
 		}
 	}
 	else if (event.t === 'MESSAGE_REACTION_REMOVE') {
@@ -206,7 +207,7 @@ Winterbot.on('raw', async event => {
 		const channelID = existingStarpost.starchannel;
 		reaction.message.guild.channels.cache.get(channelID).messages.fetch(existingStarpost.starpost).then(msg => {
 			msg.edit({ embed: createStarboardEmbed(reaction.message, reaction.count) });
-		}).catch(e=>console.log(e));;
+		}).catch(e => console.log(e));;
 	}
 
 });
@@ -292,6 +293,14 @@ function createStarboardEmbed(msg, count) {
 		}
 	}
 	embed.setColor(msg.guild.me.displayColor || 16741829);
+	return embed;
+}
+
+function createTranslateEmbed(msg, language) {
+	const embed = new MessageEmbed({
+		description: '[Original message](' + msg.url + ') ' + language
+	});
+	embed.setColor(msg.member.displayColor || 16777215);
 	return embed;
 }
 
@@ -406,6 +415,34 @@ Winterbot.on('guildMemberUpdate', (oldMember, newMember) => {
 // 		});
 // 	});
 // });
+
+Winterbot.on('message', async (msg) => {
+	if (msg.webhookID) return;
+	if (msg.channel.id !== secure.translation.from) return;
+	const toChannel = await msg.guild.channels.cache.get(secure.translation.to);
+	toChannel.fetchWebhooks().then(async webhooks => {
+		if (webhooks.first()) return webhooks.first();
+		else {
+			return await toChannel.createWebhook('Translation', {})
+		}
+	}).then(async (webhook) => {
+		if (!webhook) return console.error('No Translation Webhook');
+		const translated = await translation.translateText(msg.content);
+		const language = await translation.detectLanguage(msg.content);
+		
+		const embed = createTranslateEmbed(msg, `(${translation.emoji(language[0][0].split('-')[0])} ${language[0][1]})`)
+		webhook.send(translated[0], {
+			username: msg.member.nickname ? `${msg.member.nickname} (${msg.author.username}#${msg.author.discriminator})` : `${`${msg.author.username}#${msg.author.discriminator}`}`,
+			avatarURL: msg.author.avatarURL(),
+			embeds: [embed, ...msg.embeds],
+			files: msg.attachments.array(),
+			allowedMentions: {
+				parse: [],
+			}
+		});
+		
+	})
+});
 
 Winterbot.on('message', async (msg) => {
 	if (!msg.author.bot && !msg.content && msg.channel.type == 'dm') Winterbot.dmManager.newMessage(msg);
