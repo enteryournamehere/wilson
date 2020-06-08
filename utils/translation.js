@@ -27,9 +27,9 @@ module.exports = {
         return new Promise(async (resolve, reject) => {
             // does not support arrays of strings to translate
             const target = 'en';
-            let to_replace = /<[@#]&?!?\d+>/;
+            let to_replace = /<(?:@&?!?|#|:\w+:)\d+>/; // regular expressions are so beautiful :')
             let revert_replacements = /REPLACEMENT\d+/;
-            let replaced_items = text.match(new RegExp(to_replace, 'g'));
+            let replaced_items = text.match(new RegExp(to_replace, 'gi'));
             let i = 0;
             while (to_replace.test(text)) {
                 text = text.replace(to_replace, 'REPLACEMENT' + i++);
