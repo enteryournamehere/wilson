@@ -6,6 +6,7 @@
     "prefix": "bot prefix",
     "owners": ["discord id here"],
     "youtube": "youtube api key",
+    "LogChanId": "enter mod channel id here",
     "twitter": {
         "access_token_key": "xyz",
         "accesS_token_secret": "xyz",
