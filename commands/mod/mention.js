@@ -30,7 +30,7 @@ module.exports = class MentionCommand extends commando.Command {
 		for (let i = 0; i<msg.member._roles.length; i++) {
 			const perm = await mentionaccess.checkPermission(msg.member._roles[i], role.id);
 			if (perm || this.client.isOwner(msg.author) || msg.member.hasPermission('ADMINISTRATOR')) {
-				msg.say('<@&' + role.id + '> ' + text).then(() => {
+				msg.say('<@&' + role.id + '> ' + text, { files: msg.attachments.map(x=>x.url) }).then(() => {
 					msg.delete();
 				});
 				return null;
