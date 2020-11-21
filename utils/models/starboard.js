@@ -1,8 +1,6 @@
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
-const Database = require('../../database.js');
-
-const db = Database.db;
+const { db } = require('../../database.js');
 
 const starposts = db.define('starposts', {
 	guild: Sequelize.STRING(25),
@@ -51,10 +49,10 @@ const starcomments = db.define('starcomments', {
 	}
 });
 
-function createStarboardEmbed(msg, count) {
+function generateStarboardEntry(msg, count) {
 	const embed = new MessageEmbed({
 		author: {
-			name: msg.author.username + ' in #' + msg.channel.name,
+			name: `${msg.author.username} in #${msg.channel.name}`,
 			icon_url: msg.author.avatarURL(),
 		},
 		description: msg.content,
@@ -64,42 +62,46 @@ function createStarboardEmbed(msg, count) {
 		},
 		timestamp: msg.createdAt
 	});
+
 	embed.addField('Original message', '[Here](' + msg.url + ')')
+
 	if (msg.attachments.size) {
 		const att = msg.attachments.first();
 		const imgtypes = ['jpg', 'jpeg', 'png', 'gif'];
-		if (att.name.includes('.') && imgtypes.includes(att.name.slice(att.name.lastIndexOf('.') + 1, att.name.length))) {
+		if (imgtypes.includes(att.name.split('.').slice(-1)[0])) {
 			embed.setImage(att.url);
 		} else {
-			embed.addField('Attachments', msg.attachments.first().url);
+			embed.addField('Attachments', att.url);
 		}
+
 	} else if (msg.embeds.length) {
 		const msgEmbed = msg.embeds[0];
 		switch (msgEmbed.type) {
-			case 'image':
 			case 'gifv':
 				embed.setImage(msgEmbed.url);
 				break;
+			case 'video':
+				embed.setTitle(msgEmbed.title);
+				break;
+
 			case 'link':
 				embed.setTitle(msgEmbed.title);
 				embed.setURL(msgEmbed.url);
 				embed.setThumbnail(msgEmbed.thumbnail.url);
 				break;
+
 			case 'rich':
 				if (msgEmbed.title) embed.setTitle(msgEmbed.title);
 				if (msgEmbed.description) embed.addField('Embed', msgEmbed.description);
-				/* eslint-disable guard-for-in */
-				for (const fieldIndex in msgEmbed.fields) {
-					const field = msgEmbed.fields[fieldIndex];
-					embed.addField(field.name, field.value, field.inline);
-				}
+
+				embed.fields.push(...msgEmbed.fields)
+
 				if (msgEmbed.thumbnail) embed.setThumbnail(msgEmbed.thumbnail.url);
 				if (msgEmbed.image) embed.setImage(msgEmbed.image.url);
 				break;
-			case 'video':
-				embed.setTitle(msgEmbed.title);
 		}
 	}
+
 	embed.setColor(msg.guild.me.displayColor || 16741829);
 	return embed;
 }
@@ -334,20 +336,21 @@ module.exports = {
 				message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(msg => {
 					msg.delete();
 				}).catch(e => console.log(e));
-				message.guild.channels.cache.get(channelID).send({ embed: await createStarboardEmbed(message, reaction.count, existingStarpost.id, existingStarpost.comments) }).then(msg => {
+				message.guild.channels.cache.get(channelID).send({ embed: await generateStarboardEntry(message, reaction.count, existingStarpost.id, existingStarpost.comments) }).then(msg => {
 					starboard.addStarpost(message, msg.id, channelID);
 				}).catch(e => console.log(e));;
 			}
 			else {
 				return message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(async msg => {
-					msg.edit({ embed: await createStarboardEmbed(message, reaction.count, existingStarpost.id, existingStarpost.comments) });
+					msg.edit({ embed: await generateStarboardEntry(message, reaction.count, existingStarpost.id, existingStarpost.comments) });
+
 				}).catch(e => console.log(e));;
 			}
 		}
 		else {
-			message.guild.channels.cache.get(channelID).send({ embed: await createStarboardEmbed(message, reaction.count, ' [loading]') }).then(msg => {
+			message.guild.channels.cache.get(channelID).send({ embed: generateStarboardEntry(message, reaction.count, ' [loading]') }).then(msg => {
 				starboard.addStarpost(message, msg.id, channelID).then(async newStarpost => {
-					msg.edit({ embed: await createStarboardEmbed(message, reaction.count, newStarpost.id) });
+					msg.edit({ embed: await generateStarboardEntry(message, reaction.count, newStarpost.id) });
 				});
 			}).catch(e => console.log(e));;
 		}
@@ -376,7 +379,7 @@ module.exports = {
 		const channelID = existingStarpost.starchannel;
 	
 		message.guild.channels.cache.get(channelID).messages.fetch(existingStarpost.starpost).then(msg => {
-			msg.edit({ embed: createStarboardEmbed(message, reaction.count) });
+			msg.edit({ embed: generateStarboardEntry(message, reaction.count) });
 		}).catch(e => console.log(e));;
 	},
 };
