@@ -136,37 +136,6 @@ Winterbot.on('messageReactionAdd', starboard.messageReactionAdd);
 
 Winterbot.on('messageReactionRemove', starboard.messageReactionRemove);
 
-// Winterbot.on('messageReactionAdd', (reaction, user) => {
-// 	if (reaction.emoji.name !== '💡') return;
-// 	if (!starboard.isEnabled(reaction.message)) return;
-// 	if (starboard.getLimit(reaction.message) > reaction.count) return;
-// 	if (starboard.isStarpost(reaction.message)) return;
-
-// 	const channelID = starboard.getChannel(reaction.message);
-
-// 	if (starboard.isStarposted(reaction.message)) {
-// 		return reaction.message.guild.channels.cache.get(channelID).messages.fetch(starboard.getStarpost(reaction.message)).then(msg => {
-// 			msg.edit({embed: createStarboardEmbed(reaction.message, reaction.count)});
-// 		});
-// 	};
-
-// 	reaction.message.guild.channels.cache.get(channelID).send({embed: createStarboardEmbed(reaction.message, reaction.count)}).then(msg => {
-// 		starboard.addStarpost(reaction.message, msg.id);
-// 	});
-// });
-
-// Winterbot.on('messageReactionRemove', (reaction, user) => {
-// 	if (reaction.emoji.name !== '💡') return;
-// 	if (!starboard.isEnabled(reaction.message)) return;
-// 	if (starboard.isStarpost(reaction.message)) return;
-// 	if (!starboard.isStarposted(reaction.message)) return;
-
-// 	const channelID = starboard.getChannel(reaction.message);
-// 	reaction.message.guild.channels.cache.get(channelID).messages.fetch(starboard.getStarpost(reaction.message)).then(msg => {
-// 		msg.edit({embed: createStarboardEmbed(reaction.message, reaction.count)});
-// 	});
-// });
-
 function createTranslateEmbed(msg, language) {
 	const embed = new MessageEmbed({
 		description: '[Original message](' + msg.url + ') ' + language
