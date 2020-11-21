@@ -367,10 +367,9 @@ module.exports = {
 		if (!channel.parent || channel.parent.id !== secure.starboardCategory) return;
 	
 		if (!starboard.isEnabled(message)) return;
-	
+		if (starboard.isStarpost(message)) return;
+
 		const existingStarpost = starboard.isStarposted(message);
-		if (existingStarpost) return;
-	
 		if (!existingStarpost) return;
 	
 		console.log('existingStarpost', existingStarpost)
