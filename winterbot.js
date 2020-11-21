@@ -22,6 +22,7 @@ const Winterbot = new Commando.Client({
 	disableEveryone: true,
 	messageCacheMaxSize: 50,
 	disabledEvents: ['TYPING_START'],
+	partials: ['MESSAGE', 'REACTION']
 });
 
 Winterbot.dispatcher.addInhibitor(msg => {
@@ -126,92 +127,93 @@ Winterbot.on('message', (msg) => {
 	});
 });
 
-const events = {
-	MESSAGE_REACTION_ADD: 'messageReactionAdd',
-	MESSAGE_REACTION_REMOVE: 'messageReactionRemove',
-};
-
-
 // 
 // this entire idea vault thing is a bit of a mess
 // i promise i'll clean it up sometime
 //
-Winterbot.on('raw', async event => {
-	if (!events.hasOwnProperty(event.t)) return;
-	const { d: data } = event;
-	if (data.emoji.name !== '💡') return;
+Winterbot.on('messageReactionAdd', async (reaction, user) => {
+	if (reaction.emoji.name !== '💡') return;
 
-	const user = await Winterbot.users.fetch(data.user_id);
-	const channel = await Winterbot.channels.fetch(data.channel_id) || await user.createDM();
-	if (!(await channel.messages.fetch(data.message_id))) return;
+	await user.fetch();
+	const message = await reaction.message.fetch()
+	if (!message) return;
+	const channel = await message.channel.fetch() || await user.createDM();
 
-	const message = await channel.messages.fetch(data.message_id);
+	if (!channel.parent || channel.parent.id !== secure.starboardCategory) return;
+	
+	if (!starboard.isEnabled(message)) return;
 
-	const reaction = message.reactions.cache.get(data.emoji.name) || { count: 0, emoji: { name: '💡', id: null, animated: false }, message: message };
+	const existingStarpost = starboard.isStarposted(message);
+	if (existingStarpost) return;
 
-	//Winterbot.emit(events[event.t], reaction, user);
+	const tiers = starboard.getTiers(message.guild.id).sort((a, b) => b.limit - a.limit); // descending order
 
-	if (!message.channel.parent || message.channel.parent.id !== secure.starboardCategory) return;
+	let tier = null;
 
-	if (event.t === 'MESSAGE_REACTION_ADD') {
-		if (!starboard.isEnabled(reaction.message)) return;
-		if (starboard.isStarpost(reaction.message)) return;
-
-		const tiers = starboard.getTiers(message.guild.id).sort((a, b) => b.limit - a.limit); // descending order
-
-		let tier = null;
-
-		for (let i = 0; i < tiers.length; i++) {
-			if (reaction.count >= tiers[i].limit) {
-				tier = tiers[i];
-				break;
-			}
+	for (let i = 0; i < tiers.length; i++) {
+		if (reaction.count >= tiers[i].limit) {
+			tier = tiers[i];
+			break;
 		}
-		if (!tier) return;
+	}
+	if (!tier) return;
 
-		const channelID = tier.channel;
+	// if (starboard.getLimit(reaction.message) > reaction.count) return;
 
-		const existingStarpost = starboard.isStarposted(reaction.message);
-		if (existingStarpost) {
-			oldTier = tiers.find(tier => {
-				return tier.channel === existingStarpost.starchannel;
-			})
-			console.log(JSON.stringify(existingStarpost, null, 4));
-			if (existingStarpost.starchannel != channelID && (!oldTier || oldTier.limit < tier.limit)) {
-				reaction.message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(msg => {
-					msg.delete();
-				}).catch(e => console.log(e));
-				reaction.message.guild.channels.cache.get(channelID).send({ embed: await createStarboardEmbed(reaction.message, reaction.count, existingStarpost.id, existingStarpost.comments) }).then(msg => {
-					starboard.addStarpost(reaction.message, msg.id, channelID);
-				}).catch(e => console.log(e));;
-			}
-			else {
-				return reaction.message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(async msg => {
-					msg.edit({ embed: await createStarboardEmbed(reaction.message, reaction.count, existingStarpost.id, existingStarpost.comments) });
-				}).catch(e => console.log(e));;
-			}
+	const channelID = tier.channel;
+
+	if (existingStarpost) {
+		oldTier = tiers.find(tier => {
+			return tier.channel === existingStarpost.starchannel;
+		})
+		if (existingStarpost.starchannel != channelID && (!oldTier || oldTier.limit < tier.limit)) {
+			message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(msg => {
+				msg.delete();
+			}).catch(e => console.log(e));
+			message.guild.channels.cache.get(channelID).send({ embed: await createStarboardEmbed(message, reaction.count, existingStarpost.id, existingStarpost.comments) }).then(msg => {
+				starboard.addStarpost(message, msg.id, channelID);
+			}).catch(e => console.log(e));;
 		}
 		else {
-			reaction.message.guild.channels.cache.get(channelID).send({ embed: await createStarboardEmbed(reaction.message, reaction.count, ' [loading]') }).then(msg => {
-				starboard.addStarpost(reaction.message, msg.id, channelID).then(async newStarpost => {
-					msg.edit({ embed: await createStarboardEmbed(reaction.message, reaction.count, newStarpost.id) });
-				});
+			return message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(async msg => {
+				msg.edit({ embed: await createStarboardEmbed(message, reaction.count, existingStarpost.id, existingStarpost.comments) });
 			}).catch(e => console.log(e));;
 		}
 	}
-	else if (event.t === 'MESSAGE_REACTION_REMOVE') {
-		if (!starboard.isEnabled(reaction.message)) return;
-		if (starboard.isStarpost(reaction.message)) return;
-		const existingStarpost = starboard.isStarposted(reaction.message);
-		if (!existingStarpost) return;
-		console.log('existingStarpost', existingStarpost)
-		console.log('message', message.id, message.channel);
-		const channelID = existingStarpost.starchannel;
-		reaction.message.guild.channels.cache.get(channelID).messages.fetch(existingStarpost.starpost).then(async msg => {
-			msg.edit({ embed: await createStarboardEmbed(reaction.message, reaction.count, existingStarpost.id) });
+	else {
+		message.guild.channels.cache.get(channelID).send({ embed: await createStarboardEmbed(message, reaction.count, ' [loading]') }).then(msg => {
+			starboard.addStarpost(message, msg.id, channelID).then(async newStarpost => {
+				msg.edit({ embed: await createStarboardEmbed(message, reaction.count, newStarpost.id) });
+			});
 		}).catch(e => console.log(e));;
 	}
+});
 
+Winterbot.on('messageReactionRemove', async (reaction, user) => {
+	if (reaction.emoji.name !== '💡') return;
+
+	await user.fetch();
+	const message = await reaction.message.fetch()
+	if (!message) return;
+	const channel = await message.channel.fetch() || await user.createDM();
+
+	if (!channel.parent || channel.parent.id !== secure.starboardCategory) return;
+
+	if (!starboard.isEnabled(message)) return;
+
+	const existingStarpost = starboard.isStarposted(message);
+	if (existingStarpost) return;
+
+	if (!existingStarpost) return;
+
+	console.log('existingStarpost', existingStarpost)
+	console.log('message', message.id, channel);
+
+	const channelID = existingStarpost.starchannel;
+
+	message.guild.channels.cache.get(channelID).messages.fetch(existingStarpost.starpost).then(msg => {
+		msg.edit({ embed: createStarboardEmbed(message, reaction.count) });
+	}).catch(e => console.log(e));;
 });
 
 // Winterbot.on('messageReactionAdd', (reaction, user) => {
