@@ -7,6 +7,7 @@ const updates = require('./utils/models/updates.js');
 const starboard = require('./utils/models/starboard.js');
 const { MessageEmbed } = require('discord.js');
 const translation = require('./utils/translation.js');
+const createStarboardEmbed = require('./utils/createStarboardEmbed.js');
 
 const updatesConfig = {
 	guild: secure.updateguild,
@@ -132,7 +133,7 @@ const events = {
 
 
 // 
-// this entire starboard thing is a bit of a mess
+// this entire idea vault thing is a bit of a mess
 // i promise i'll clean it up sometime
 //
 Winterbot.on('raw', async event => {
@@ -168,8 +169,6 @@ Winterbot.on('raw', async event => {
 		}
 		if (!tier) return;
 
-		// if (starboard.getLimit(reaction.message) > reaction.count) return;
-
 		const channelID = tier.channel;
 
 		const existingStarpost = starboard.isStarposted(reaction.message);
@@ -177,23 +176,26 @@ Winterbot.on('raw', async event => {
 			oldTier = tiers.find(tier => {
 				return tier.channel === existingStarpost.starchannel;
 			})
+			console.log(JSON.stringify(existingStarpost, null, 4));
 			if (existingStarpost.starchannel != channelID && (!oldTier || oldTier.limit < tier.limit)) {
 				reaction.message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(msg => {
 					msg.delete();
 				}).catch(e => console.log(e));
-				reaction.message.guild.channels.cache.get(channelID).send({ embed: createStarboardEmbed(reaction.message, reaction.count) }).then(msg => {
+				reaction.message.guild.channels.cache.get(channelID).send({ embed: await createStarboardEmbed(reaction.message, reaction.count, existingStarpost.id, existingStarpost.comments) }).then(msg => {
 					starboard.addStarpost(reaction.message, msg.id, channelID);
 				}).catch(e => console.log(e));;
 			}
 			else {
-				return reaction.message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(msg => {
-					msg.edit({ embed: createStarboardEmbed(reaction.message, reaction.count) });
+				return reaction.message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(async msg => {
+					msg.edit({ embed: await createStarboardEmbed(reaction.message, reaction.count, existingStarpost.id, existingStarpost.comments) });
 				}).catch(e => console.log(e));;
 			}
 		}
 		else {
-			reaction.message.guild.channels.cache.get(channelID).send({ embed: createStarboardEmbed(reaction.message, reaction.count) }).then(msg => {
-				starboard.addStarpost(reaction.message, msg.id, channelID);
+			reaction.message.guild.channels.cache.get(channelID).send({ embed: await createStarboardEmbed(reaction.message, reaction.count, ' [loading]') }).then(msg => {
+				starboard.addStarpost(reaction.message, msg.id, channelID).then(async newStarpost => {
+					msg.edit({ embed: await createStarboardEmbed(reaction.message, reaction.count, newStarpost.id) });
+				});
 			}).catch(e => console.log(e));;
 		}
 	}
@@ -205,8 +207,8 @@ Winterbot.on('raw', async event => {
 		console.log('existingStarpost', existingStarpost)
 		console.log('message', message.id, message.channel);
 		const channelID = existingStarpost.starchannel;
-		reaction.message.guild.channels.cache.get(channelID).messages.fetch(existingStarpost.starpost).then(msg => {
-			msg.edit({ embed: createStarboardEmbed(reaction.message, reaction.count) });
+		reaction.message.guild.channels.cache.get(channelID).messages.fetch(existingStarpost.starpost).then(async msg => {
+			msg.edit({ embed: await createStarboardEmbed(reaction.message, reaction.count, existingStarpost.id) });
 		}).catch(e => console.log(e));;
 	}
 
@@ -242,59 +244,6 @@ Winterbot.on('raw', async event => {
 // 		msg.edit({embed: createStarboardEmbed(reaction.message, reaction.count)});
 // 	});
 // });
-
-function createStarboardEmbed(msg, count) {
-	const embed = new MessageEmbed({
-		author: {
-			name: msg.author.username + ' in #' + msg.channel.name,
-			icon_url: msg.author.avatarURL(),
-		},
-		description: msg.content,
-		footer: {
-			icon_url: 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/248/light-bulb_1f4a1.png',
-			text: count
-		},
-		timestamp: msg.createdAt
-	});
-	embed.addField('Original message', '[Here](' + msg.url + ')')
-	if (msg.attachments.size) {
-		const att = msg.attachments.first();
-		const imgtypes = ['jpg', 'jpeg', 'png', 'gif'];
-		if (att.name.includes('.') && imgtypes.includes(att.name.slice(att.name.lastIndexOf('.') + 1, att.name.length))) {
-			embed.setImage(att.url);
-		} else {
-			embed.addField('Attachments', msg.attachments.first().url);
-		}
-	} else if (msg.embeds.length) {
-		const msgEmbed = msg.embeds[0];
-		switch (msgEmbed.type) {
-			case 'image':
-			case 'gifv':
-				embed.setImage(msgEmbed.url);
-				break;
-			case 'link':
-				embed.setTitle(msgEmbed.title);
-				embed.setURL(msgEmbed.url);
-				embed.setThumbnail(msgEmbed.thumbnail.url);
-				break;
-			case 'rich':
-				if (msgEmbed.title) embed.setTitle(msgEmbed.title);
-				if (msgEmbed.description) embed.addField('Embed', msgEmbed.description);
-				/* eslint-disable guard-for-in */
-				for (const fieldIndex in msgEmbed.fields) {
-					const field = msgEmbed.fields[fieldIndex];
-					embed.addField(field.name, field.value, field.inline);
-				}
-				if (msgEmbed.thumbnail) embed.setThumbnail(msgEmbed.thumbnail.url);
-				if (msgEmbed.image) embed.setImage(msgEmbed.image.url);
-				break;
-			case 'video':
-				embed.setTitle(msgEmbed.title);
-		}
-	}
-	embed.setColor(msg.guild.me.displayColor || 16741829);
-	return embed;
-}
 
 function createTranslateEmbed(msg, language) {
 	const embed = new MessageEmbed({
