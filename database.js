@@ -9,7 +9,6 @@ class AeiouDatabase {
 			host: 'localhost',
 			provider: 'mysql',
 			logging: false,
-			operatorsAliases: false,
 		});
 	}
 
