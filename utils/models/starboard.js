@@ -46,7 +46,7 @@ const starcomments = db.define('starcomments', {
 }, {
 	uniqueKeys: {
 		"starcomment_unique": {
-			fields: ['starpost', 'author ']
+			fields: ['starpost', 'author']
 		}
 	}
 });
@@ -151,17 +151,28 @@ module.exports = {
 	},
 
 	addStarComment: async function (guild, starId, comment, author) {
-		starboardCache[guild].find(m => m.id === starId).comments.push({author: author, comment: comment});
-		return starcomments.upsert({
+		const currentComment = starboardCache[guild].find(m => m.id === starId).comments.find(c => c.author == author);
+		
+		if (currentComment) {
+			// edit currentComment in the cache
+		}
+		else {
+			starboardCache[guild].find(m => m.id === starId).comments.push({author: author, comment: comment});
+		}
+
+		// this SHOULD not allow multiple comments by 1 author on 1 idea, see table definition at top of file. doesn't seem to work though
+		return await starcomments.upsert({
 			starpost: starId,
 			comment: comment,
 			author: author,
+		}).then(() => {
+			return !currentComment;
 		})
 		// todo
 		// x add comment here
 		// x load comment when loading star embed
 		// / allow editing comments
-		// / auto reload star embed after commenting
+		// x auto reload star embed after commenting
 	},
 
 	isStarposted: function (msg) {

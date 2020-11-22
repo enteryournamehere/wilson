@@ -38,8 +38,8 @@ module.exports = class CommentCommand extends Command {
 	async run(msg, {idea, comment}) {
 		const starpost = starboard.getStarpostById(msg.guild.id, idea);
         if (!starpost) return msg.say('I couldn\'t find that idea, sorry!');
-        starboard.addStarComment(msg.guild.id, idea, comment, msg.author.id).then(() => {
-			msg.say('Comment added!');
+        starboard.addStarComment(msg.guild.id, idea, comment, msg.author.id).then((isNew) => {
+			msg.say(isNew ? 'Comment added!' : 'Comment edited!');
 			msg.guild.channels.cache.get(starpost.starchannel).messages.fetch(starpost.starpost).then(async starboardMessage => {
 				const oldEmbed = starboardMessage.embeds[0];
 				if (!oldEmbed) return; //should never happen
