@@ -136,13 +136,16 @@ module.exports = {
 			});
 		}
 		else {
-			starboardCache[msg.guild.id].push({ message: msg.id, starpost: starpost, starchannel: starchannel, comments: [] });
 			return starposts.create({
 				guild: msg.guild.id,
 				message: msg.id,
 				starpost: starpost,
 				starchannel: starchannel,
-			});
+			}).then(newStarpost => {
+				starboardCache[msg.guild.id].push({ id: newStarpost.id, message: msg.id, starpost: starpost, starchannel: starchannel, comments: [] });
+				return newStarpost;
+			})
+
 			// kinda ugly to separate upsert & create like this, but I need the ID of the inserted row when creating
 		}
 	},
