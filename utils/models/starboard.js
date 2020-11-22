@@ -5,22 +5,35 @@ const Database = require('../../database.js');
 const db = Database.db;
 
 const starposts = db.define('starposts', {
-	guild: Sequelize.STRING(25),
+	guild: {
+		/* eslint-disable-next-line */
+		type: Sequelize.STRING(25),
+	},
 	message: {
+		/* eslint-disable-next-line */
 		type: Sequelize.STRING(25),
 		unique: true,
 	},
-	starpost: Sequelize.STRING(25),
+	starpost: {
+		/* eslint-disable-next-line */
+		type: Sequelize.STRING(25),
+	},
 	starchannel: Sequelize.STRING(25),
 }, { timestamps: false, charset: 'utf8mb4' });
 
 const starguilds = db.define('starguilds', {
 	guild: {
+		/* eslint-disable-next-line */
 		type: Sequelize.STRING(25),
 		unique: true,
 	},
-	limit: Sequelize.INTEGER,
-	channel: Sequelize.STRING(25),
+	limit: {
+		type: Sequelize.INTEGER,
+	},
+	channel: {
+		/* eslint-disable-next-line */
+		type: Sequelize.STRING(25),
+	},
 	enabled: {
 		type: Sequelize.BOOLEAN,
 		defaultValue: false,
@@ -37,19 +50,7 @@ const startiers = db.define('startiers', {
 			fields: ['guild', 'limit']
 		}
 	}
-});
-
-const starcomments = db.define('starcomments', {
-	starpost: Sequelize.STRING(25),
-	comment: Sequelize.STRING(2000),
-	author: Sequelize.STRING(25),
-}, {
-	uniqueKeys: {
-		"starcomment_unique": {
-			fields: ['starpost', 'author ']
-		}
-	}
-});
+})
 
 db.sync();
 
@@ -115,9 +116,7 @@ module.exports = {
 			let count = 0;
 			x.forEach(p => {
 				count++;
-				starcomments.findAll({where: {starpost: p.id}}).then(comments => {
-					starboardCache[p.guild].push({ message: p.message, starpost: p.starpost, starchannel: p.starchannel, id: p.id, comments: comments});
-				});
+				starboardCache[p.guild].push({ message: p.message, starpost: p.starpost, starchannel: p.starchannel });
 			});
 			return count;
 		});
@@ -128,37 +127,14 @@ module.exports = {
 		if (existing) {
 			existing.starpost = starpost;
 			existing.starchannel = starchannel;
-			return starposts.upsert({
-				guild: msg.guild.id,
-				message: msg.id,
-				starpost: starpost,
-				starchannel: starchannel,
-			});
 		}
-		else {
-			starboardCache[msg.guild.id].push({ message: msg.id, starpost: starpost, starchannel: starchannel, comments: [] });
-			return starposts.create({
-				guild: msg.guild.id,
-				message: msg.id,
-				starpost: starpost,
-				starchannel: starchannel,
-			});
-			// kinda ugly to separate upsert & create like this, but I need the ID of the inserted row when creating
-		}
-	},
-
-	addStarComment: async function (guild, starId, comment, author) {
-		starboardCache[guild].find(m => m.id === starId).comments.push({author: author, comment: comment});
-		return starcomments.upsert({
-			starpost: starId,
-			comment: comment,
-			author: author,
-		})
-		// todo
-		// x add comment here
-		// x load comment when loading star embed
-		// / allow editing comments
-		// / auto reload star embed after commenting
+		else starboardCache[msg.guild.id].push({ message: msg.id, starpost: starpost, starchannel: starchannel });
+		return starposts.upsert({
+			guild: msg.guild.id,
+			message: msg.id,
+			starpost: starpost,
+			starchannel: starchannel,
+		});
 	},
 
 	isStarposted: function (msg) {
@@ -199,10 +175,6 @@ module.exports = {
 
 	getStarpost: function (msg) {
 		return starboardCache[msg.guild.id].find(m => m.message === msg.id).starpost;
-	},
-
-	getStarpostById: function(guild, id) {
-		return starboardCache[guild].find(m => m.id === id);
 	},
 
 	enable: function (msg) {
