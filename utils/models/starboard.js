@@ -372,9 +372,6 @@ module.exports = {
 		const existingStarpost = starboard.isStarposted(message);
 		if (!existingStarpost) return;
 	
-		console.log('existingStarpost', existingStarpost)
-		console.log('message', message.id, channel);
-	
 		const channelID = existingStarpost.starchannel;
 	
 		message.guild.channels.cache.get(channelID).messages.fetch(existingStarpost.starpost).then(msg => {
