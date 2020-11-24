@@ -230,11 +230,12 @@ module.exports = {
 		// x auto reload star embed after commenting
 	},
 
-	isStarposted: function (msg) {
+		// getStarposted
+	getEntryByMsg: function (msg) {
 		return starboardCache[msg.guild.id].find(m => m.message === msg.id);
 	},
 
-	isStarpost: function (msg) {
+	getEntryByPost: function (msg) {
 		return starboardCache[msg.guild.id].find(m => m.starpost === msg.id);
 	},
 
@@ -309,7 +310,7 @@ module.exports = {
 	
 		if (!starboard.isEnabled(message)) return;
 
-		const existingStarpost = starboard.isStarposted(message);
+		const existingStarpost = starboard.getEntryByMsg(message);
 		if (existingStarpost) return;
 
 		const tiers = starboard.getTiers(message.guild.id).sort((a, b) => b.limit - a.limit); // descending order
@@ -367,9 +368,8 @@ module.exports = {
 		if (!channel.parent || channel.parent.id !== secure.starboardCategory) return;
 	
 		if (!starboard.isEnabled(message)) return;
-		if (starboard.isStarpost(message)) return;
 
-		const existingStarpost = starboard.isStarposted(message);
+		const existingStarpost = starboard.getEntryByMsg(message);
 		if (!existingStarpost) return;
 	
 		const channelID = existingStarpost.starchannel;
