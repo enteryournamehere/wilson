@@ -49,6 +49,185 @@ const starcomments = db.define('starcomments', {
 	}
 });
 
+db.sync();
+
+const starboardCache = {};
+const starguildCache = {};
+const startierCache = {};
+
+
+function getTiers(guild) {
+	return starguildCache[guild].tiers;
+};
+
+async function setTier(guild, limit, channel) {
+	const existing = starguildCache[guild].tiers.find(tier => (tier.limit === limit));
+	if (existing) existing.channel = channel;
+	else starguildCache[guild].tiers.push({
+		guild: guild,
+		limit: limit,
+		channel: channel,
+	});
+	return startiers.upsert({
+		guild: guild,
+		limit: limit,
+		channel: channel,
+	});
+};
+
+async function removeTier(guild, limit) {
+	const existing = starguildCache[guild].tiers.findIndex(tier => (tier.limit === limit));
+	if (existing === -1) return new Promise((resolve, reject) => {
+		reject({error: 'This tier does not exist'});
+	});
+	starguildCache[guild].tiers.splice(existing, 1);
+	return startiers.destroy({where: {
+		guild: guild,
+		limit: limit,
+	}})
+};
+
+async function buildStarboardCache(guildList) {
+	guildList.forEach(id => {
+		starboardCache[id] = [];
+	});
+	starguilds.findAll({
+		where: {
+			guild: { [Op.in]: guildList },
+		},
+	}).then(x => {
+		x.forEach(async p => {
+			const tiers = await startiers.findAll({ where: { guild: p.guild } });
+			starguildCache[p.guild] = { limit: p.limit, channel: p.channel, enabled: p.enabled, tiers: tiers };
+		});
+	});
+	return starposts.findAll({
+		where: {
+			guild: { [Op.in]: guildList },
+		},
+	}).then(x => {
+		let count = 0;
+		x.forEach(p => {
+			count++;
+			starcomments.findAll({where: {starpost: p.id}}).then(comments => {
+				starboardCache[p.guild].push({ message: p.message, starpost: p.starpost, starchannel: p.starchannel, id: p.id, comments: comments});
+			});
+		});
+		return count;
+	});
+};
+
+async function addStarpost(msg, starpost, starchannel) {
+	let existing = starboardCache[msg.guild.id].find(starpost => starpost.message === msg.id);
+	if (existing) {
+		existing.starpost = starpost;
+		existing.starchannel = starchannel;
+		return starposts.upsert({
+			guild: msg.guild.id,
+			message: msg.id,
+			starpost: starpost,
+			starchannel: starchannel,
+		});
+	}
+	else {
+		return starposts.create({
+			guild: msg.guild.id,
+			message: msg.id,
+			starpost: starpost,
+			starchannel: starchannel,
+		}).then(newStarpost => {
+			starboardCache[msg.guild.id].push({ id: newStarpost.id, message: msg.id, starpost: starpost, starchannel: starchannel, comments: [] });
+			return newStarpost;
+		})
+
+		// kinda ugly to separate upsert & create like this, but I need the ID of the inserted row when creating
+	}
+};
+
+async function addStarComment(guild, starId, comment, author) {
+	const currentComment = starboardCache[guild].find(m => m.id === starId).comments.find(c => c.author == author);
+	
+	if (currentComment) {
+		// edit currentComment in the cache
+	}
+	else {
+		starboardCache[guild].find(m => m.id === starId).comments.push({author: author, comment: comment});
+	}
+
+	// this SHOULD not allow multiple comments by 1 author on 1 idea, see table definition at top of file. doesn't seem to work though
+	return await starcomments.upsert({
+		starpost: starId,
+		comment: comment,
+		author: author,
+	}).then(() => {
+		return !currentComment;
+	})
+	// todo
+	// x add comment here
+	// x load comment when loading star embed
+	// / allow editing comments
+	// x auto reload star embed after commenting
+}
+
+function getEntryByMsg(msg) {
+	return starboardCache[msg.guild.id].find(m => m.message === msg.id);
+};
+
+function getEntryByPost(msg) {
+	return starboardCache[msg.guild.id].find(m => m.starpost === msg.id);
+};
+
+function getLimit(msg) {
+	starguildCache[msg.guild.id] = starguildCache[msg.guild.id] || {};
+	return starguildCache[msg.guild.id].limit;
+};
+
+async function setLimit(msg, limit) {
+	starguildCache[msg.guild.id] = starguildCache[msg.guild.id] || {};
+	starguildCache[msg.guild.id].limit = limit;
+	return starguilds.upsert({
+		guild: msg.guild.id,
+		limit: limit,
+	});
+};
+
+function getChannel(msg) {
+	starguildCache[msg.guild.id] = starguildCache[msg.guild.id] || {};
+	return starguildCache[msg.guild.id].channel;
+};
+
+function setChannel(msg, channel) {
+	starguildCache[msg.guild.id] = starguildCache[msg.guild.id] || {};
+	starguildCache[msg.guild.id].channel = channel.id;
+	return starguilds.upsert({
+		guild: msg.guild.id,
+		channel: channel.id,
+	});
+};
+
+function enable(msg) {
+	starguildCache[msg.guild.id] = starguildCache[msg.guild.id] || {};
+	starguildCache[msg.guild.id].enabled = true;
+	return starguilds.upsert({
+		guild: msg.guild.id,
+		enabled: true,
+	});
+};
+
+function disable(msg) {
+	starguildCache[msg.guild.id] = starguildCache[msg.guild.id] || {};
+	starguildCache[msg.guild.id].enabled = false;
+	return starguilds.upsert({
+		guild: msg.guild.id,
+		enabled: false,
+	});
+};
+
+function isEnabled(msg) {
+	starguildCache[msg.guild.id] = starguildCache[msg.guild.id] || {};
+	return starguildCache[msg.guild.id].enabled;
+};
+
 function generateStarboardEntry(msg, count) {
 	const embed = new MessageEmbed({
 		author: {
@@ -104,278 +283,95 @@ function generateStarboardEntry(msg, count) {
 
 	embed.setColor(msg.guild.me.displayColor || 16741829);
 	return embed;
-}
+};
 
-db.sync();
+async function messageReactionAdd(reaction, user) {
+	if (reaction.emoji.name !== '💡') return;
 
-const starboardCache = {};
-const starguildCache = {};
-const startierCache = {};
+	await user.fetch();
+	const message = await reaction.message.fetch()
+	if (!message) return;
+	const channel = await message.channel.fetch() || await user.createDM();
+
+	if (!channel.parent || channel.parent.id !== secure.starboardCategory) return;
+
+	if (!starboard.isEnabled(message)) return;
+
+	const existingStarpost = starboard.getEntryByMsg(message);
+	if (existingStarpost) return;
+
+	// sorted in descending order.
+	const tier = starboard.getTiers(message.guild.id).sort((a, b) => b.limit - a.limit).find(tier => reaction.count >= tier.limit);
+	if (!tier) return;
+
+	// if (starboard.getLimit(reaction.message) > reaction.count) return;
+
+	const channelID = tier.channel;
+
+	if (existingStarpost) {
+		oldTier = tiers.find(tier => {
+			return tier.channel === existingStarpost.starchannel;
+		})
+		if (existingStarpost.starchannel != channelID && (!oldTier || oldTier.limit < tier.limit)) {
+			message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(msg => {
+				msg.delete();
+			}).catch(e => console.log(e));
+			message.guild.channels.cache.get(channelID).send({ embed: await generateStarboardEntry(message, reaction.count, existingStarpost.id, existingStarpost.comments) }).then(msg => {
+				starboard.addStarpost(message, msg.id, channelID);
+			}).catch(e => console.log(e));;
+		}
+		else {
+			return message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(async msg => {
+				msg.edit({ embed: await generateStarboardEntry(message, reaction.count, existingStarpost.id, existingStarpost.comments) });
+				}).catch(e => console.log(e));;
+		}
+	}
+	else {
+		message.guild.channels.cache.get(channelID).send({ embed: generateStarboardEntry(message, reaction.count, ' [loading]') }).then(msg => {
+			starboard.addStarpost(message, msg.id, channelID).then(async newStarpost => {
+				msg.edit({ embed: await generateStarboardEntry(message, reaction.count, newStarpost.id) });
+			});
+		}).catch(e => console.log(e));;
+	}
+};
+
+async function messageReactionRemove(reaction, user) {
+	if (reaction.emoji.name !== '💡') return;
+
+	await user.fetch();
+	const message = await reaction.message.fetch()
+	if (!message) return;
+	const channel = await message.channel.fetch() || await user.createDM();
+
+	if (!channel.parent || channel.parent.id !== secure.starboardCategory) return;
+
+	if (!starboard.isEnabled(message)) return;
+
+	const existingStarpost = starboard.getEntryByMsg(message);
+	if (!existingStarpost) return;
+
+	const channelID = existingStarpost.starchannel;
+
+	message.guild.channels.cache.get(channelID).messages.fetch(existingStarpost.starpost).then(async msg => {
+		msg.edit({ embed: await generateStarboardEntry(message, reaction.count) });
+	}).catch(e => console.log(e));;
+};
 
 module.exports = {
 	starboardCache,
 	starguildCache,
 	startierCache,
-
-	getTiers: function (guild) {
-		return starguildCache[guild].tiers;
-	},
-
-	setTier: async function (guild, limit, channel) {
-		const existing = starguildCache[guild].tiers.find(tier => (tier.limit === limit));
-		if (existing) existing.channel = channel;
-		else starguildCache[guild].tiers.push({
-			guild: guild,
-			limit: limit,
-			channel: channel,
-		});
-		return startiers.upsert({
-			guild: guild,
-			limit: limit,
-			channel: channel,
-		});
-	},
-
-	removeTier: async function (guild, limit) {
-		const existing = starguildCache[guild].tiers.findIndex(tier => (tier.limit === limit));
-		if (existing === -1) return new Promise((resolve, reject) => {
-			reject({error: 'This tier does not exist'});
-		});
-		starguildCache[guild].tiers.splice(existing, 1);
-		return startiers.destroy({where: {
-			guild: guild,
-			limit: limit,
-		}})
-	},
-
-	buildStarboardCache: async function (guildList) {
-		guildList.forEach(id => {
-			starboardCache[id] = [];
-		});
-		starguilds.findAll({
-			where: {
-				guild: { [Op.in]: guildList },
-			},
-		}).then(x => {
-			x.forEach(async p => {
-				const tiers = await startiers.findAll({ where: { guild: p.guild } });
-				starguildCache[p.guild] = { limit: p.limit, channel: p.channel, enabled: p.enabled, tiers: tiers };
-			});
-		});
-		return starposts.findAll({
-			where: {
-				guild: { [Op.in]: guildList },
-			},
-		}).then(x => {
-			let count = 0;
-			x.forEach(p => {
-				count++;
-				starcomments.findAll({where: {starpost: p.id}}).then(comments => {
-					starboardCache[p.guild].push({ message: p.message, starpost: p.starpost, starchannel: p.starchannel, id: p.id, comments: comments});
-				});
-			});
-			return count;
-		});
-	},
-
-	addStarpost: async function (msg, starpost, starchannel) {
-		let existing = starboardCache[msg.guild.id].find(starpost => starpost.message === msg.id);
-		if (existing) {
-			existing.starpost = starpost;
-			existing.starchannel = starchannel;
-			return starposts.upsert({
-				guild: msg.guild.id,
-				message: msg.id,
-				starpost: starpost,
-				starchannel: starchannel,
-			});
-		}
-		else {
-			return starposts.create({
-				guild: msg.guild.id,
-				message: msg.id,
-				starpost: starpost,
-				starchannel: starchannel,
-			}).then(newStarpost => {
-				starboardCache[msg.guild.id].push({ id: newStarpost.id, message: msg.id, starpost: starpost, starchannel: starchannel, comments: [] });
-				return newStarpost;
-			})
-
-			// kinda ugly to separate upsert & create like this, but I need the ID of the inserted row when creating
-		}
-	},
-
-	addStarComment: async function (guild, starId, comment, author) {
-		const currentComment = starboardCache[guild].find(m => m.id === starId).comments.find(c => c.author == author);
-		
-		if (currentComment) {
-			// edit currentComment in the cache
-		}
-		else {
-			starboardCache[guild].find(m => m.id === starId).comments.push({author: author, comment: comment});
-		}
-
-		// this SHOULD not allow multiple comments by 1 author on 1 idea, see table definition at top of file. doesn't seem to work though
-		return await starcomments.upsert({
-			starpost: starId,
-			comment: comment,
-			author: author,
-		}).then(() => {
-			return !currentComment;
-		})
-		// todo
-		// x add comment here
-		// x load comment when loading star embed
-		// / allow editing comments
-		// x auto reload star embed after commenting
-	},
-
-		// getStarposted
-	getEntryByMsg: function (msg) {
-		return starboardCache[msg.guild.id].find(m => m.message === msg.id);
-	},
-
-	getEntryByPost: function (msg) {
-		return starboardCache[msg.guild.id].find(m => m.starpost === msg.id);
-	},
-
-	setLimit: async function (msg, limit) {
-		starguildCache[msg.guild.id] = starguildCache[msg.guild.id] || {};
-		starguildCache[msg.guild.id].limit = limit;
-		return starguilds.upsert({
-			guild: msg.guild.id,
-			limit: limit,
-		});
-	},
-
-	getLimit: function (msg) {
-		starguildCache[msg.guild.id] = starguildCache[msg.guild.id] || {};
-		return starguildCache[msg.guild.id].limit;
-	},
-
-	getChannel: function (msg) {
-		starguildCache[msg.guild.id] = starguildCache[msg.guild.id] || {};
-		return starguildCache[msg.guild.id].channel;
-	},
-
-	setChannel: function (msg, channel) {
-		starguildCache[msg.guild.id] = starguildCache[msg.guild.id] || {};
-		starguildCache[msg.guild.id].channel = channel.id;
-		return starguilds.upsert({
-			guild: msg.guild.id,
-			channel: channel.id,
-		});
-	},
-
-	getStarpost: function (msg) {
-		return starboardCache[msg.guild.id].find(m => m.message === msg.id).starpost;
-	},
-
-	getStarpostById: function(guild, id) {
-		return starboardCache[guild].find(m => m.id === id);
-	},
-
-	enable: function (msg) {
-		starguildCache[msg.guild.id] = starguildCache[msg.guild.id] || {};
-		starguildCache[msg.guild.id].enabled = true;
-		return starguilds.upsert({
-			guild: msg.guild.id,
-			enabled: true,
-		});
-	},
-
-	disable: function (msg) {
-		starguildCache[msg.guild.id] = starguildCache[msg.guild.id] || {};
-		starguildCache[msg.guild.id].enabled = false;
-		return starguilds.upsert({
-			guild: msg.guild.id,
-			enabled: false,
-		});
-	},
-
-	isEnabled: function (msg) {
-		starguildCache[msg.guild.id] = starguildCache[msg.guild.id] || {};
-		return starguildCache[msg.guild.id].enabled;
-	},
-
-	messageReactionAdd: async function (reaction, user) {
-		if (reaction.emoji.name !== '💡') return;
-
-		await user.fetch();
-		const message = await reaction.message.fetch()
-		if (!message) return;
-		const channel = await message.channel.fetch() || await user.createDM();
-
-		if (!channel.parent || channel.parent.id !== secure.starboardCategory) return;
-	
-		if (!starboard.isEnabled(message)) return;
-
-		const existingStarpost = starboard.getEntryByMsg(message);
-		if (existingStarpost) return;
-
-		const tiers = starboard.getTiers(message.guild.id).sort((a, b) => b.limit - a.limit); // descending order
-
-		let tier = null;
-
-		for (let i = 0; i < tiers.length; i++) {
-			if (reaction.count >= tiers[i].limit) {
-				tier = tiers[i];
-				break;
-			}
-		}
-		if (!tier) return;
-
-		// if (starboard.getLimit(reaction.message) > reaction.count) return;
-
-		const channelID = tier.channel;
-
-		if (existingStarpost) {
-			oldTier = tiers.find(tier => {
-				return tier.channel === existingStarpost.starchannel;
-			})
-			if (existingStarpost.starchannel != channelID && (!oldTier || oldTier.limit < tier.limit)) {
-				message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(msg => {
-					msg.delete();
-				}).catch(e => console.log(e));
-				message.guild.channels.cache.get(channelID).send({ embed: await generateStarboardEntry(message, reaction.count, existingStarpost.id, existingStarpost.comments) }).then(msg => {
-					starboard.addStarpost(message, msg.id, channelID);
-				}).catch(e => console.log(e));;
-			}
-			else {
-				return message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(async msg => {
-					msg.edit({ embed: await generateStarboardEntry(message, reaction.count, existingStarpost.id, existingStarpost.comments) });
-
-				}).catch(e => console.log(e));;
-			}
-		}
-		else {
-			message.guild.channels.cache.get(channelID).send({ embed: generateStarboardEntry(message, reaction.count, ' [loading]') }).then(msg => {
-				starboard.addStarpost(message, msg.id, channelID).then(async newStarpost => {
-					msg.edit({ embed: await generateStarboardEntry(message, reaction.count, newStarpost.id) });
-				});
-			}).catch(e => console.log(e));;
-		}
-	},
-
-	messageReactionRemove: async function (reaction, user) {
-		if (reaction.emoji.name !== '💡') return;
-	
-		await user.fetch();
-		const message = await reaction.message.fetch()
-		if (!message) return;
-		const channel = await message.channel.fetch() || await user.createDM();
-	
-		if (!channel.parent || channel.parent.id !== secure.starboardCategory) return;
-	
-		if (!starboard.isEnabled(message)) return;
-
-		const existingStarpost = starboard.getEntryByMsg(message);
-		if (!existingStarpost) return;
-	
-		const channelID = existingStarpost.starchannel;
-	
-		message.guild.channels.cache.get(channelID).messages.fetch(existingStarpost.starpost).then(msg => {
-			msg.edit({ embed: generateStarboardEntry(message, reaction.count) });
-		}).catch(e => console.log(e));;
-	},
+	getTiers,
+	setTier,
+	removeTier,
+	buildStarboardCache,
+	setLimit,
+	getLimit,
+	getChannel,
+	setChannel,
+	enable,
+	disable,
+	isEnabled,
+	messageReactionAdd,
+	messageReactionRemove,
 };
