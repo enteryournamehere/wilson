@@ -228,16 +228,16 @@ function isEnabled(msg) {
 	return starguildCache[msg.guild.id].enabled;
 };
 
-function generateStarboardEntry(msg, count) {
+async function generateStarboardEntry(msg, count, comments = []) {
 	const embed = new MessageEmbed({
 		author: {
-			name: `${msg.author.username} in #${msg.channel.name}`,
+			name: `${msg.author.displayName} in #${msg.channel.name}`,
 			icon_url: msg.author.avatarURL(),
 		},
 		description: msg.content,
 		footer: {
 			icon_url: 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/248/light-bulb_1f4a1.png',
-			text: count
+			text: count + ' | idea #' + id,
 		},
 		timestamp: msg.createdAt
 	});
@@ -247,7 +247,7 @@ function generateStarboardEntry(msg, count) {
 	if (msg.attachments.size) {
 		const att = msg.attachments.first();
 		const imgtypes = ['jpg', 'jpeg', 'png', 'gif'];
-		if (imgtypes.includes(att.name.split('.').slice(-1)[0])) {
+		if (imgtypes.includes(att.name.split('.').slice(-1)[0]).toLowerCase()) {
 			embed.setImage(att.url);
 		} else {
 			embed.addField('Attachments', att.url);
@@ -279,6 +279,10 @@ function generateStarboardEntry(msg, count) {
 				if (msgEmbed.image) embed.setImage(msgEmbed.image.url);
 				break;
 		}
+	}
+	for (const comment of comments) {
+		author = await msg.guild.members.fetch(comment.author);
+		embed.addField('💬 Comment from ' + author.displayName, comment.comment);
 	}
 
 	embed.setColor(msg.guild.me.displayColor || 16741829);

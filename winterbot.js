@@ -7,7 +7,6 @@ const updates = require('./utils/models/updates.js');
 const starboard = require('./utils/models/starboard.js');
 const { MessageEmbed } = require('discord.js');
 const translation = require('./utils/translation.js');
-const createStarboardEmbed = require('./utils/createStarboardEmbed.js');
 
 const updatesConfig = {
 	guild: secure.updateguild,

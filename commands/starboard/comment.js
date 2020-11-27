@@ -1,6 +1,5 @@
 const { Command } = require('discord.js-commando');
 const starboard = require('../../utils/models/starboard.js');
-const createStarboardEmbed = require('../../utils/createStarboardEmbed.js');
 const secure = require('../../secure.json');
 
 module.exports = class CommentCommand extends Command {
