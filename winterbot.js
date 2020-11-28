@@ -4,7 +4,7 @@ const path = require('path');
 const SequelizeProvider = require('./utils/Sequelize');
 const database = require('./database.js');
 const updates = require('./utils/models/updates.js');
-const starboard = require('./utils/models/starboard.js');
+const ideaVault = require('./utils/models/idea-vault.js');
 const { MessageEmbed } = require('discord.js');
 const translation = require('./utils/translation.js');
 
@@ -44,7 +44,7 @@ Winterbot.registry
 		['config', 'Config commands'],
 		['mod', 'Mod commands'],
 		['owner', 'Owner commands'],
-		['starboard', 'Starboard (idea board) commands'],
+		['ideavault', 'Idea vault commands'],
 		// ['music', 'music commands'],
 	])
 	.registerDefaultTypes()
@@ -103,9 +103,6 @@ Winterbot.fetches = {
 Winterbot.on('ready', () => {
 	Winterbot.dmManager = new (require('./utils/classes/DmManager.js'))(Winterbot);
 
-	starboard.buildStarboardCache(Array.from(Winterbot.guilds.cache.keys())).then(c => {
-		console.log(`Cached ${c} starposts for ${Array.from(Winterbot.guilds.cache.keys()).length} guilds!`);
-	});
 	console.log(`{green}Ready!`);
 });
 
@@ -126,14 +123,10 @@ Winterbot.on('message', (msg) => {
 	});
 });
 
-// 
-// this entire idea vault thing is a bit of a mess
-// i promise i'll clean it up sometime
-//
-// subscribe the starboard's events
-Winterbot.on('messageReactionAdd', starboard.messageReactionAdd);
+// subscribe the idea vault's events
+Winterbot.on('messageReactionAdd', ideaVault.messageReactionAdd);
 
-Winterbot.on('messageReactionRemove', starboard.messageReactionRemove);
+Winterbot.on('messageReactionRemove', ideaVault.messageReactionRemove);
 
 function createTranslateEmbed(msg, language) {
 	const embed = new MessageEmbed({
