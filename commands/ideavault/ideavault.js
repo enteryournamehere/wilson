@@ -40,7 +40,7 @@ module.exports = class IdeaVaultCommand extends Command {
 				ideaVault.disable(msg.guild.id);
 				return msg.say('The idea vault is now disabled.');
 			case '':
-				return msg.say('The idea vault is' + ideaVault.isEnabled(msg.guild.id) ? 'enabled.' : 'disabled.')
+				return msg.say('The idea vault is' + ideaVault.isEnabled(msg.guild.id) ? 'enabled.' : 'disabled.');
 		};
 	}
 };

@@ -21,7 +21,7 @@ const Winterbot = new Commando.Client({
 	disableEveryone: true,
 	messageCacheMaxSize: 50,
 	disabledEvents: ['TYPING_START'],
-	partials: ['MESSAGE', 'REACTION']
+	partials: ['MESSAGE', 'REACTION'],
 });
 
 Winterbot.dispatcher.addInhibitor(msg => {
@@ -109,7 +109,7 @@ Winterbot.on('ready', () => {
 Winterbot.once('ready', () => {
 	if (secure.fetches.youtube) Winterbot.fetches.youtube.run();
 	if (secure.fetches.twitter) Winterbot.fetches.twitter.run();
-})
+});
 
 Winterbot.on('message', (msg) => {
 	if (!msg.author) return;
@@ -130,7 +130,7 @@ Winterbot.on('messageReactionRemove', ideaVault.messageReactionRemove);
 
 function createTranslateEmbed(msg, language) {
 	const embed = new MessageEmbed({
-		description: '[Original message](' + msg.url + ') ' + language
+		description: '[Original message](' + msg.url + ') ' + language,
 	});
 	embed.setColor(msg.member.displayColor || 16777215);
 	return embed;
@@ -170,14 +170,14 @@ roleMap.set('418726789444272129', '651548709527617557');    // musician
 roleMap.set('694608130629435432', '709469819874836541');    // john
 
 Winterbot.on('guildMemberAdd', member => {
-    /**
+	/**
      * transfer roles from old server member to new server member
      */
 	if (member.guild.id != newGuildId) return;  // if join is not in new server, return
-	let oldMember = Winterbot.guilds.resolve(oldGuildId).members.resolve(member.id);
+	const oldMember = Winterbot.guilds.resolve(oldGuildId).members.resolve(member.id);
 	if (!oldMember) return; // if user is not in old server, return
 	oldMember.roles.cache.forEach((v, k) => {
-		let newId = roleMap.get(k);
+		const newId = roleMap.get(k);
 		if (newId) member.roles.add(newId); // if role is in map, add role
 	});
 });
@@ -189,13 +189,14 @@ const mmxTeamCcAgreedRoleId = '709406460450177094';
 Winterbot.on('guildMemberUpdate', (oldMember, newMember) => {
 	// if the roles have changed, do stuff
 	if (oldMember.roles.cache.keys() != newMember.roles.cache.keys()) {
-		let roles = newMember.roles.cache.keyArray(); // get updated roles
+		const roles = newMember.roles.cache.keyArray(); // get updated roles
 		// if member has both roles and not the combined role, add combined role
-		if (roles.includes(mmxTeamRoleId) && roles.includes(ccAgreedRoleId) && !roles.includes(mmxTeamCcAgreedRoleId))
+		if (roles.includes(mmxTeamRoleId) && roles.includes(ccAgreedRoleId) && !roles.includes(mmxTeamCcAgreedRoleId)) {
 			newMember.roles.add(mmxTeamCcAgreedRoleId);
 		// if member does not have both roles but has combined role, remove combined role
-		else if ((!roles.includes(mmxTeamRoleId) || !roles.includes(ccAgreedRoleId)) && roles.includes(mmxTeamCcAgreedRoleId))
+		} else if ((!roles.includes(mmxTeamRoleId) || !roles.includes(ccAgreedRoleId)) && roles.includes(mmxTeamCcAgreedRoleId)) {
 			newMember.roles.remove(mmxTeamCcAgreedRoleId);
+		};
 	}
 });
 
@@ -255,14 +256,14 @@ Winterbot.on('message', async (msg) => {
 	toChannel.fetchWebhooks().then(async webhooks => {
 		if (webhooks.first()) return webhooks.first();
 		else {
-			return await toChannel.createWebhook('Translation', {})
+			return await toChannel.createWebhook('Translation', {});
 		}
 	}).then(async (webhook) => {
 		if (!webhook) return console.error('No Translation Webhook');
 		const translated = await translation.translateText(msg.content);
 		const language = await translation.detectLanguage(msg.content);
-		
-		const embed = createTranslateEmbed(msg, `(${translation.emoji(language[0][0].split('-')[0])} ${language[0][1]})`)
+
+		const embed = createTranslateEmbed(msg, `(${translation.emoji(language[0][0].split('-')[0])} ${language[0][1]})`);
 		webhook.send(translated[0], {
 			username: msg.member.nickname ? `${msg.member.nickname} (${msg.author.username}#${msg.author.discriminator})` : `${`${msg.author.username}#${msg.author.discriminator}`}`,
 			avatarURL: msg.author.avatarURL(),
@@ -270,10 +271,9 @@ Winterbot.on('message', async (msg) => {
 			files: msg.attachments.array(),
 			allowedMentions: {
 				parse: [],
-			}
+			},
 		});
-		
-	})
+	});
 });
 
 Winterbot.on('message', async (msg) => {
@@ -304,7 +304,7 @@ const colours = {
 
 const oldLog = console.log;
 
-global.console.log = function (...args) {
+global.console.log = function(...args) {
 	args = args.map(arg => {
 		if (typeof arg === 'string') {
 			/* eslint-disable guard-for-in */

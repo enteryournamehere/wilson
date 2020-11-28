@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
-const Op = Sequelize.Op;
 const { db } = require('../../database.js');
+const { MessageEmbed } = require('discord.js');
 
 const ideas = db.define('ideas', {
 	id: {
@@ -39,10 +39,10 @@ const tiers = db.define('ideatiers', {
 	treshold: Sequelize.INTEGER,
 }, {
 	uniqueKeys: {
-		"ideatiers_unique": {
-			fields: ['guild', 'treshold']
-		}
-	}
+		'ideatiers_unique': {
+			fields: ['guild', 'treshold'],
+		},
+	},
 });
 
 const comments = db.define('ideacomments', {
@@ -51,10 +51,10 @@ const comments = db.define('ideacomments', {
 	value: Sequelize.STRING(1024),
 }, {
 	uniqueKeys: {
-		"ideacomments_unique": {
-			fields: ['idea', 'author']
-		}
-	}
+		'ideacomments_unique': {
+			fields: ['idea', 'author'],
+		},
+	},
 });
 
 db.sync();
@@ -62,8 +62,8 @@ db.sync();
 function getTiers(guild) {
 	return tiers.findAll({
 		where: {
-			guild: guild
-		}
+			guild: guild,
+		},
 	});
 };
 
@@ -71,15 +71,15 @@ function setTier(guild, channel, treshold) {
 	return tiers.upsert({
 		guild: guild,
 		channel: channel,
-		treshold: treshold
+		treshold: treshold,
 	});
 };
 
 function removeTier(channel) {
 	return tiers.destroy({
 		where: {
-			channel: channel
-		}
+			channel: channel,
+		},
 	});
 };
 
@@ -89,38 +89,38 @@ function insertIdea(msg, post) {
 		message: msg.id,
 		post: post.id,
 		post_channel: post.channel.id,
-	})
+	});
 };
 
 function upsertComment(id, author, value) {
 	return comments.upsert({
 		id: id,
 		author: author,
-		value: value
+		value: value,
 	});
 };
 
 function getIdeaByMsg(msg) {
 	return ideas.findOne({
 		where: {
-			message: msg
-		}
+			message: msg,
+		},
 	});
 };
 
 function getIdeaByPost(msg) {
 	return ideas.findOne({
 		where: {
-			post: msg
-		}
+			post: msg,
+		},
 	});
 };
 
 function getIdeaByID(id) {
 	return ideas.findOne({
 		where: {
-			id: id
-		}
+			id: id,
+		},
 	});
 };
 
@@ -141,12 +141,12 @@ function disable(guild) {
 function isEnabled(guild) {
 	return guilds.findOne({
 		where: {
-			guild: guild
-		}
+			guild: guild,
+		},
 	}).enabled;
 };
 
-async function generatePostEmbed(msg, count, comments = []) {
+async function generatePostEmbed(id, msg, count, comments = []) {
 	const embed = new MessageEmbed({
 		author: {
 			name: `${msg.author.displayName} in #${msg.channel.name}`,
@@ -157,10 +157,10 @@ async function generatePostEmbed(msg, count, comments = []) {
 			icon_url: 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/248/light-bulb_1f4a1.png',
 			text: `${count} | Idea #${id}`,
 		},
-		timestamp: msg.createdAt
+		timestamp: msg.createdAt,
 	});
 
-	embed.addField('Original message', '[Here](' + msg.url + ')')
+	embed.addField('Original message', '[Here](' + msg.url + ')');
 
 	if (msg.attachments.size) {
 		const att = msg.attachments.first();
@@ -170,7 +170,6 @@ async function generatePostEmbed(msg, count, comments = []) {
 		} else {
 			embed.addField('Attachments', att.url);
 		}
-
 	} else if (msg.embeds.length) {
 		const msgEmbed = msg.embeds[0];
 		switch (msgEmbed.type) {
@@ -191,7 +190,7 @@ async function generatePostEmbed(msg, count, comments = []) {
 				if (msgEmbed.title) embed.setTitle(msgEmbed.title);
 				if (msgEmbed.description) embed.addField('Embed', msgEmbed.description);
 
-				embed.fields.push(...msgEmbed.fields)
+				embed.fields.push(...msgEmbed.fields);
 
 				if (msgEmbed.thumbnail) embed.setThumbnail(msgEmbed.thumbnail.url);
 				if (msgEmbed.image) embed.setImage(msgEmbed.image.url);
@@ -199,7 +198,7 @@ async function generatePostEmbed(msg, count, comments = []) {
 		}
 	}
 	for (const comment of comments) {
-		author = await msg.guild.members.fetch(comment.author);
+		const author = await msg.guild.members.fetch(comment.author);
 		embed.addField('💬 Comment from ' + author.displayName, comment.value);
 	}
 
@@ -211,7 +210,7 @@ async function messageReactionAdd(reaction, user) {
 	if (reaction.emoji.name !== '💡') return;
 
 	await reaction.fetch();
-	if(!isEnabled(reaction.message.guild.id)) return;
+	if (!isEnabled(reaction.message.guild.id)) return;
 
 	// sorted in descending order.
 	const tier = getTiers(reaction.message.guild.id).sort((a, b) => b.treshold - a.treshold).find(tier => reaction.count >= tier.treshold);
@@ -220,7 +219,7 @@ async function messageReactionAdd(reaction, user) {
 	const idea = getIdeaByMsg(reaction.message.id);
 
 	if (idea) {
-		const post = await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post)
+		const post = await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
 		if (!post) return;
 
 		post.embeds[0].setFooter(
@@ -235,23 +234,23 @@ async function messageReactionAdd(reaction, user) {
 			await post.delete();
 
 			return ideas.upsert({
-				guild: msg.guild.id,
-				message: msg.id,
+				guild: reaction.message.guild.id,
+				message: reaction.message.id,
 				post: newPost,
 				channel: tier.channel,
 			});
-		}
-		// We have not reached a new tier, we need to update the count.
-		else {
-			message.edit({ embed: post.embeds[0] });
+		} else {
+			// We have not reached a new tier, we need to update the count.
+			post.edit({ embed: post.embeds[0] });
 		};
-	}
-	// We reached the lowest tier, we need to create a post
-	else {
+	} else {
+		// We reached the lowest tier, we need to create a post
 		reaction.message.guild.channels.cache.get(tier.channel).send(
-			'', { embed: await generatePostEmbed(reaction.message, reaction.count) }
+			{ embed: await generatePostEmbed('[loading]', reaction.message, reaction.count) }
 		).then(async msg => {
-			insertIdea(reaction.message, msg);
+			msg.edit({ // We don't know the ID until after inserting, and we can't insert without a post
+				embed: await generatePostEmbed(insertIdea(reaction.message, msg).id, reaction.message, reaction.count),
+			});
 		}).catch(e => console.log(e));
 	};
 };
@@ -263,9 +262,9 @@ async function messageReactionRemove(reaction, user) {
 	if (!idea) return;
 
 	await reaction.fetch();
-	if(!isEnabled(reaction.message.guild.id)) return;
+	if (!isEnabled(reaction.message.guild.id)) return;
 
-	const post = await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post)
+	const post = await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
 	if (!post) return;
 
 	post.embeds[0].setFooter(

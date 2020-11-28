@@ -15,21 +15,21 @@ module.exports = class CommentCommand extends Command {
 			args: [
 				{
 					key: 'id',
-                    prompt: 'What\'s the idea ID? Please do not include the # sign.',
+					prompt: 'What\'s the idea ID? Please do not include the # sign.',
 					type: 'integer',
-                },
-                {
-                    key: 'comment',
-                    prompt: 'What\'s your comment?',
-                    type: 'string',
-                }
+				},
+				{
+					key: 'comment',
+					prompt: 'What\'s your comment?',
+					type: 'string',
+				},
 			],
 		});
 	}
 
 	hasPermission(msg) {
-        if (this.client.isOwner(msg.author)) return true;
-        if (msg.member.roles.cache.some(role => secure.ideaVaultCommentRoles.includes(role.id))) return true;
+		if (this.client.isOwner(msg.author)) return true;
+		if (msg.member.roles.cache.some(role => secure.ideaVaultCommentRoles.includes(role.id))) return true;
 		if (msg.member.hasPermission('ADMINISTRATOR')) return true;
 		return 'Your role does not have permission to comment on ideas.';
 	}
@@ -37,10 +37,10 @@ module.exports = class CommentCommand extends Command {
 	async run(msg, {id, comment}) {
 		const idea = ideaVault.getIdeaByID(id);
 		if (!idea) return msg.say('I couldn\'t find that idea, sorry!');
-		
+
 		await ideaVault.upsertComment(id, msg.author.id, comment);
 
-		const post = await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
+		const post = await msg.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
 		const embed = post.embeds[0];
 
 		const index = embed.fields.indexOf(embed.fields.find(item => item.name === '💬 Comment from ' + msg.member.displayName));

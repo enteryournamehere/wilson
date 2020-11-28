@@ -13,25 +13,24 @@ module.exports = class IdeaVaultTierCommand extends Command {
 			format: '<action> [action arguments]',
 			guildOnly: true,
 			args: [{
-					key: 'action',
-					prompt: 'list/set/remove?',
-					type: 'string',
-					validate: (val) => {
-                        return ['list', 'set', 'remove'].includes(val);
-					},
-				},{
-					key: 'threshold',
-					prompt: 'threshold?',
-					type: 'integer',
-                    default: '0',
-                    min: 1,
-				},{
-					key: 'channel',
-					prompt: 'channel?',
-					type: 'channel',
-					default: '',
+				key: 'action',
+				prompt: 'list/set/remove?',
+				type: 'string',
+				validate: (val) => {
+					return ['list', 'set', 'remove'].includes(val);
 				},
-			],
+			}, {
+				key: 'threshold',
+				prompt: 'threshold?',
+				type: 'integer',
+				default: '0',
+				min: 1,
+			}, {
+				key: 'channel',
+				prompt: 'channel?',
+				type: 'channel',
+				default: '',
+			}],
 		});
 	}
 
@@ -42,9 +41,9 @@ module.exports = class IdeaVaultTierCommand extends Command {
 	}
 
 	async run(msg, {action, channel, threshold}) {
-        switch (action) {
+		switch (action) {
 			case 'list':
-				let tiers = ideaVault.getTiers(msg.guild.id).sort((a, b) => a.treshold - b.treshold);
+				const tiers = ideaVault.getTiers(msg.guild.id).sort((a, b) => a.treshold - b.treshold);
 				let response = 'The current tiers for the idea vault:\n';
 				for (let i = 0; i<tiers.length; i++) {
 					response += `   <#${tiers[i].channel}> - ${tiers[i].treshold} 💡`;
@@ -55,7 +54,7 @@ module.exports = class IdeaVaultTierCommand extends Command {
 				ideaVault.setTier(msg.guild.id, channel.id, threshold).then(tier => msg.say(tier ? 'added' : 'edited')).catch(e=>msg.say(e.error));
 				break;
 			case 'remove':
-				ideaVault.removeTier(msg.guild.id, channel).then(x=>msg.say('Removed it!')).catch(e=>msg.say(e.error))
+				ideaVault.removeTier(msg.guild.id, channel).then(x=>msg.say('Removed it!')).catch(e=>msg.say(e.error));
 		}
 	}
 };
