@@ -1,3 +1,4 @@
+/* eslint-disable new-cap */
 const Sequelize = require('sequelize');
 const { db } = require('../../database.js');
 const { MessageEmbed } = require('discord.js');
