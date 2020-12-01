@@ -6,7 +6,7 @@ const { MessageEmbed } = require('discord.js');
 const ideas = db.define('ideas', {
 	id: {
 		type: Sequelize.INTEGER,
-		unique: true,
+		primaryKey: true,
 	},
 	guild: Sequelize.STRING(25),
 	message: {
@@ -23,7 +23,7 @@ const ideas = db.define('ideas', {
 const guilds = db.define('ideaguilds', {
 	id: {
 		type: Sequelize.STRING(25),
-		unique: true,
+		primaryKey: true,
 	},
 	enabled: {
 		type: Sequelize.BOOLEAN,
@@ -35,7 +35,7 @@ const tiers = db.define('ideatiers', {
 	guild: Sequelize.STRING(25),
 	channel: {
 		type: Sequelize.STRING(25),
-		unique: true,
+		primaryKey: true,
 	},
 	treshold: Sequelize.INTEGER,
 }, {
@@ -142,7 +142,7 @@ function disable(guild) {
 function isEnabled(guild) {
 	return guilds.findOne({
 		where: {
-			guild: guild,
+			id: guild,
 		},
 	}).enabled;
 };
