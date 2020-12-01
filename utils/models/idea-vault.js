@@ -127,20 +127,21 @@ function getIdeaByID(id) {
 
 function enable(guild) {
 	return guilds.upsert({
-		guild: guild,
+		id: guild,
 		enabled: true,
 	});
 };
 
 function disable(guild) {
 	return guilds.upsert({
-		guild: guild,
+		id: guild,
 		enabled: false,
 	});
 };
 
 function isEnabled(guild) {
 	return guilds.findOne({
+		attributes: ['enabled'],
 		where: {
 			id: guild,
 		},
