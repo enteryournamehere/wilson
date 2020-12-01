@@ -15,8 +15,9 @@ module.exports = class IdeaVaultCommand extends Command {
 			args: [
 				{
 					key: 'action',
-					prompt: 'Please specify one of: enable, disable.',
+					prompt: 'Please specify one of: enable, disable. Or leave empty to see current value.',
 					type: 'string',
+					default: '',
 					validate: (val, msg, currArg, prevArgs) => {
 						return ['enable', 'disable', ''].includes(val);
 					},
@@ -40,7 +41,8 @@ module.exports = class IdeaVaultCommand extends Command {
 				ideaVault.disable(msg.guild.id);
 				return msg.say('The idea vault is now disabled.');
 			case '':
-				return msg.say('The idea vault is' + ideaVault.isEnabled(msg.guild.id) ? 'enabled.' : 'disabled.');
+				console.log(await ideaVault.isEnabled(msg.guild.id));
+				return msg.say('The idea vault is ' + (await ideaVault.isEnabled(msg.guild.id) ? 'enabled.' : 'disabled.'));
 		};
 	}
 };
