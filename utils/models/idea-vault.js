@@ -86,7 +86,6 @@ function removeTier(channel) {
 };
 
 function insertIdea(msg, post) {
-	return ideas.upsert({
 	return ideas.create({
 		guild: msg.guild.id,
 		message: msg.id,
@@ -147,7 +146,6 @@ function isEnabled(guild) {
 		where: {
 			id: guild,
 		},
-	}).enabled;
 	}).then(result => {
 		return result.enabled;
 	});
@@ -156,7 +154,7 @@ function isEnabled(guild) {
 async function generatePostEmbed(id, msg, count, comments = []) {
 	const embed = new MessageEmbed({
 		author: {
-			name: `${msg.author.displayName} in #${msg.channel.name}`,
+			name: `${msg.author.username} in #${msg.channel.name}`,
 			icon_url: msg.author.avatarURL(),
 		},
 		description: msg.content,
@@ -220,10 +218,12 @@ async function messageReactionAdd(reaction, user) {
 	if (!isEnabled(reaction.message.guild.id)) return;
 
 	// sorted in descending order.
-	const tier = getTiers(reaction.message.guild.id).sort((a, b) => b.treshold - a.treshold).find(tier => reaction.count >= tier.treshold);
+	const tier = await getTiers(reaction.message.guild.id).then(tiers => {
+		return tiers.sort((a, b) => b.treshold - a.treshold).find(tier => reaction.count >= tier.treshold);
+	});
 	if (!tier) return;
 
-	const idea = getIdeaByMsg(reaction.message.id);
+	const idea = await getIdeaByMsg(reaction.message.id);
 
 	if (idea) {
 		const post = await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
@@ -235,12 +235,12 @@ async function messageReactionAdd(reaction, user) {
 		);
 
 		// We have reached a new tier, we need to move the message.
-		if (idea.channel != tier.channel) {
-			const newPost = await reaction.message.guild.channels.cache.get(tier.channel).send('', post.embeds[0]);
+		if (idea.post_channel !== tier.channel) {
+			const newPost = await reaction.message.guild.channels.cache.get(tier.channel).send({ embed: post.embeds[0] });
 
 			await post.delete();
 
-			return ideas.upsert({
+			ideas.upsert({
 				guild: reaction.message.guild.id,
 				message: reaction.message.id,
 				post: newPost,
@@ -252,24 +252,23 @@ async function messageReactionAdd(reaction, user) {
 		};
 	} else {
 		// We reached the lowest tier, we need to create a post
-		reaction.message.guild.channels.cache.get(tier.channel).send(
-			{ embed: await generatePostEmbed('[loading]', reaction.message, reaction.count) }
-		).then(async msg => {
-			msg.edit({ // We don't know the ID until after inserting, and we can't insert without a post
-				embed: await generatePostEmbed(insertIdea(reaction.message, msg).id, reaction.message, reaction.count),
-			});
-		}).catch(e => console.log(e));
+		const post = await reaction.message.guild.channels.cache.get(tier.channel).send(
+			{ embed: await generatePostEmbed('[loading]', reaction.message, reaction.count) },
+		);
+		// We don't know the ID until after inserting, and we can't insert without a post message
+		const idea = await insertIdea(reaction.message, post);
+		post.edit({ embed: await generatePostEmbed(idea.id, reaction.message, reaction.count) });
 	};
 };
 
 async function messageReactionRemove(reaction, user) {
 	if (reaction.emoji.name !== '💡') return;
 
-	const idea = getIdeaByMsg(reaction.message.id);
-	if (!idea) return;
-
 	await reaction.fetch();
 	if (!isEnabled(reaction.message.guild.id)) return;
+
+	const idea = await getIdeaByMsg(reaction.message.id);
+	if (!idea) return;
 
 	const post = await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
 	if (!post) return;
