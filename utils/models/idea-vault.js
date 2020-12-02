@@ -279,7 +279,27 @@ async function messageReactionRemove(reaction, user) {
 		'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/248/light-bulb_1f4a1.png',
 	);
 
-	post.edit({ embed: post.embeds[0] });
+	// sorted in descending order.
+	const tier = await getTiers(reaction.message.guild.id).then(tiers => {
+		return tiers.sort((a, b) => b.treshold - a.treshold).find(tier => reaction.count >= tier.treshold);
+	});
+	if (!tier) {
+		// TODO: delete the idea
+		await post.delete();
+	} else if (idea.post_channel !== tier.channel) {
+		const newPost = await reaction.message.guild.channels.cache.get(tier.channel).send({ embed: post.embeds[0] });
+
+		await post.delete();
+
+		ideas.upsert({
+			guild: reaction.message.guild.id,
+			message: reaction.message.id,
+			post: newPost,
+			channel: tier.channel,
+		});
+	} else {
+		post.edit({ embed: post.embeds[0] });
+	};
 };
 
 module.exports = {
