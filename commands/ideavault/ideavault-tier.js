@@ -7,8 +7,8 @@ module.exports = class IdeaVaultTierCommand extends Command {
 			name: 'ideavault-tier',
 			group: 'ideavault',
 			memberName: 'ideavault-tier',
-			aliases: ['sb-tier'],
-			description: 'Idea Vault tiers, different reaction counts to different channel!',
+			aliases: ['iv-tier'],
+			description: 'Idea Vault tiers, different reaction counts to different channels!',
 			examples: ['ideavault-tier add #channel 10', 'ideavault-tier list', 'ideavault-tier remove #channel'],
 			format: '<action> [action arguments]',
 			guildOnly: true,
@@ -16,20 +16,21 @@ module.exports = class IdeaVaultTierCommand extends Command {
 				key: 'action',
 				prompt: 'list/set/remove?',
 				type: 'string',
+				default: '',
 				validate: (val) => {
 					return ['list', 'set', 'remove'].includes(val);
 				},
+			}, {
+				key: 'channel',
+				prompt: 'channel?',
+				type: 'channel',
+				default: '',
 			}, {
 				key: 'threshold',
 				prompt: 'threshold?',
 				type: 'integer',
 				default: '0',
 				min: 1,
-			}, {
-				key: 'channel',
-				prompt: 'channel?',
-				type: 'channel',
-				default: '',
 			}],
 		});
 	}
@@ -42,19 +43,24 @@ module.exports = class IdeaVaultTierCommand extends Command {
 
 	async run(msg, {action, channel, threshold}) {
 		switch (action) {
+			case '': // Do nothing. We want the code below to execute.
 			case 'list':
-				const tiers = ideaVault.getTiers(msg.guild.id).sort((a, b) => a.treshold - b.treshold);
+				const tiers = await ideaVault.getTiers(msg.guild.id).then(tiers => {
+					tiers.sort((a, b) => a.treshold - b.treshold);
+				});
 				let response = 'The current tiers for the idea vault:\n';
 				for (let i = 0; i<tiers.length; i++) {
 					response += `   <#${tiers[i].channel}> - ${tiers[i].treshold} 💡`;
 				};
-				msg.say(response);
+				await msg.say(response);
 				break;
 			case 'set':
-				ideaVault.setTier(msg.guild.id, channel.id, threshold).then(tier => msg.say(tier ? 'added' : 'edited')).catch(e=>msg.say(e.error));
+				await ideaVault.setTier(msg.guild.id, channel.id, threshold);
+				await msg.say('Set the threshold of <#' + channel.id + '> to `' + threshold + '`');
 				break;
 			case 'remove':
-				ideaVault.removeTier(msg.guild.id, channel).then(x=>msg.say('Removed it!')).catch(e=>msg.say(e.error));
+				await ideaVault.removeTier(msg.guild.id, channel);
+				await msg.say(`Removed tier <#${channel.id}>!`);
 		}
 	}
 };
