@@ -6,6 +6,7 @@ const { MessageEmbed } = require('discord.js');
 const ideas = db.define('ideas', {
 	id: {
 		type: Sequelize.INTEGER,
+		autoIncrement: true,
 		primaryKey: true,
 	},
 	guild: Sequelize.STRING(25),
