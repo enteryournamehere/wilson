@@ -87,6 +87,7 @@ function removeTier(channel) {
 
 function insertIdea(msg, post) {
 	return ideas.upsert({
+	return ideas.create({
 		guild: msg.guild.id,
 		message: msg.id,
 		post: post.id,
@@ -147,6 +148,9 @@ function isEnabled(guild) {
 			id: guild,
 		},
 	}).enabled;
+	}).then(result => {
+		return result.enabled;
+	});
 };
 
 async function generatePostEmbed(id, msg, count, comments = []) {
