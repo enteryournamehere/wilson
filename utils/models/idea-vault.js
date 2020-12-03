@@ -16,7 +16,6 @@ const ideas = db.define('ideas', {
 	},
 	post: {
 		type: Sequelize.STRING(25),
-		unique: true,
 	},
 	post_channel: Sequelize.STRING(25),
 }, { timestamps: false, charset: 'utf8mb4' });
@@ -225,7 +224,16 @@ async function messageReactionAdd(reaction, user) {
 
 	const idea = await getIdeaByMsg(reaction.message.id);
 
-	if (idea) {
+	if (!idea || idea.post === '0') {
+		// We reached the first tier, and this is a new or reserved idea
+		const post = await reaction.message.guild.channels.cache.get(tier.channel).send(
+			{ embed: await generatePostEmbed('[loading]', reaction.message, reaction.count) },
+		);
+		// We don't know the ID until after inserting, and we can't insert without a post message
+		// This ternary expression handles if this is a reserved idea and we already have an id.
+		const id = !idea ? (await insertIdea(reaction.message, post)).id : idea.id;
+		post.edit({ embed: await generatePostEmbed(id, reaction.message, reaction.count) });
+	} else {
 		const post = await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
 		if (!post) return;
 
@@ -241,23 +249,14 @@ async function messageReactionAdd(reaction, user) {
 			await post.delete();
 
 			ideas.upsert({
-				guild: reaction.message.guild.id,
-				message: reaction.message.id,
+				id: idea.id,
 				post: newPost,
-				channel: tier.channel,
+				post_channel: tier.channel,
 			});
 		} else {
 			// We have not reached a new tier, we need to update the count.
 			post.edit({ embed: post.embeds[0] });
 		};
-	} else {
-		// We reached the lowest tier, we need to create a post
-		const post = await reaction.message.guild.channels.cache.get(tier.channel).send(
-			{ embed: await generatePostEmbed('[loading]', reaction.message, reaction.count) },
-		);
-		// We don't know the ID until after inserting, and we can't insert without a post message
-		const idea = await insertIdea(reaction.message, post);
-		post.edit({ embed: await generatePostEmbed(idea.id, reaction.message, reaction.count) });
 	};
 };
 
@@ -278,12 +277,17 @@ async function messageReactionRemove(reaction, user) {
 		'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/248/light-bulb_1f4a1.png',
 	);
 
-	// sorted in descending order.
+	// Sorted in descending order.
 	const tier = await getTiers(reaction.message.guild.id).then(tiers => {
 		return tiers.sort((a, b) => b.treshold - a.treshold).find(tier => reaction.count >= tier.treshold);
 	});
 	if (!tier) {
-		// TODO: delete the idea
+		// Let's remove, but reserve the idea.
+		await ideas.upsert({
+			id: idea.id,
+			post: '0',
+			post_channel: '0',
+		});
 		await post.delete();
 	} else if (idea.post_channel !== tier.channel) {
 		const newPost = await reaction.message.guild.channels.cache.get(tier.channel).send({ embed: post.embeds[0] });
@@ -291,10 +295,9 @@ async function messageReactionRemove(reaction, user) {
 		await post.delete();
 
 		ideas.upsert({
-			guild: reaction.message.guild.id,
-			message: reaction.message.id,
+			id: idea.id,
 			post: newPost,
-			channel: tier.channel,
+			post_channel: tier.channel,
 		});
 	} else {
 		post.edit({ embed: post.embeds[0] });
