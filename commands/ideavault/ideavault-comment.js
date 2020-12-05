@@ -35,7 +35,7 @@ module.exports = class CommentCommand extends Command {
 	}
 
 	async run(msg, {id, comment}) {
-		const idea = ideaVault.getIdeaByID(id);
+		const idea = await ideaVault.getIdeaByID(id);
 		if (!idea) return msg.say('I couldn\'t find that idea, sorry!');
 
 		await ideaVault.upsertComment(id, msg.author.id, comment);
