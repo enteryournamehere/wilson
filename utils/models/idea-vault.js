@@ -47,15 +47,16 @@ const tiers = db.define('ideatiers', {
 });
 
 const comments = db.define('ideacomments', {
-	idea: Sequelize.STRING(25),
-	author: Sequelize.STRING(25),
-	value: Sequelize.STRING(1024),
-}, {
-	uniqueKeys: {
-		'ideacomments_unique': {
-			fields: ['idea', 'author'],
-		},
+	// Specifying mutliple columns as primary key will make it a composite primary key
+	idea: {
+		type: Sequelize.STRING(25),
+		primaryKey: true,
 	},
+	author: {
+		type: Sequelize.STRING(25),
+		primaryKey: true,
+	},
+	value: Sequelize.STRING(1024),
 });
 
 db.sync();
@@ -95,7 +96,7 @@ function insertIdea(msg, post) {
 
 function upsertComment(id, author, value) {
 	return comments.upsert({
-		id: id,
+		idea: id,
 		author: author,
 		value: value,
 	});
