@@ -249,14 +249,14 @@ async function messageReactionAdd(reaction, user) {
 
 			await post.delete();
 
-			ideas.upsert({
+			await ideas.upsert({
 				id: idea.id,
 				post: newPost,
 				post_channel: tier.channel,
 			});
 		} else {
 			// We have not reached a new tier, we need to update the count.
-			post.edit({ embed: post.embeds[0] });
+			await post.edit({ embed: post.embeds[0] });
 		};
 	};
 };
@@ -295,13 +295,13 @@ async function messageReactionRemove(reaction, user) {
 
 		await post.delete();
 
-		ideas.upsert({
+		await ideas.upsert({
 			id: idea.id,
 			post: newPost,
 			post_channel: tier.channel,
 		});
 	} else {
-		post.edit({ embed: post.embeds[0] });
+		await post.edit({ embed: post.embeds[0] });
 	};
 };
 
