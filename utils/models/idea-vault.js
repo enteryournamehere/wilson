@@ -217,6 +217,9 @@ async function messageReactionAdd(reaction, user) {
 	await reaction.fetch();
 	if (!isEnabled(reaction.message.guild.id)) return;
 
+	// People may try to react on posts instead of their linked message
+	if (await getIdeaByPost(reaction.message.id)) return;
+
 	// sorted in descending order.
 	const tier = await getTiers(reaction.message.guild.id).then(tiers => {
 		return tiers.sort((a, b) => b.treshold - a.treshold).find(tier => reaction.count >= tier.treshold);
