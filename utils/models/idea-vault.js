@@ -233,6 +233,16 @@ async function messageReactionAdd(reaction, user) {
 		// We don't know the ID until after inserting, and we can't insert without a post message
 		// This ternary expression handles if this is a reserved idea and we already have an id.
 		const id = !idea ? (await insertIdea(reaction.message, post)).id : idea.id;
+
+		// If this is a reserved idea update the post
+		if (idea) {
+			await ideas.upsert({
+				id: idea.id,
+				post: post.id,
+				post_channel: post.channel.id,
+			});
+		};
+
 		post.edit({ embed: await generatePostEmbed(id, reaction.message, reaction.count) });
 	} else {
 		const post = await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
