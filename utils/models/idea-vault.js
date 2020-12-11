@@ -261,8 +261,8 @@ async function messageReactionAdd(reaction, user) {
 
 			await ideas.upsert({
 				id: idea.id,
-				post: newPost,
-				post_channel: tier.channel,
+				post: newPost.id,
+				post_channel: newPost.channel.id,
 			});
 		} else {
 			// We have not reached a new tier, we need to update the count.
@@ -307,8 +307,8 @@ async function messageReactionRemove(reaction, user) {
 
 		await ideas.upsert({
 			id: idea.id,
-			post: newPost,
-			post_channel: tier.channel,
+			post: newPost.id,
+			post_channel: newPost.channel.id,
 		});
 	} else {
 		await post.edit({ embed: post.embeds[0] });
