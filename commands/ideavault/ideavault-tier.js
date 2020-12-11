@@ -59,7 +59,7 @@ module.exports = class IdeaVaultTierCommand extends Command {
 				await msg.say('Set the threshold of <#' + channel.id + '> to `' + threshold + '`');
 				break;
 			case 'remove':
-				await ideaVault.removeTier(msg.guild.id, channel);
+				await ideaVault.removeTier(channel.id);
 				await msg.say(`Removed tier <#${channel.id}>!`);
 		}
 	}
