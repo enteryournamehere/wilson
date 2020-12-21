@@ -4,7 +4,7 @@ const path = require('path');
 const SequelizeProvider = require('./utils/Sequelize');
 const database = require('./database.js');
 const updates = require('./utils/models/updates.js');
-const starboard = require('./utils/models/starboard.js');
+const ideaVault = require('./utils/models/idea-vault.js');
 const { MessageEmbed } = require('discord.js');
 const translation = require('./utils/translation.js');
 
@@ -21,6 +21,7 @@ const Winterbot = new Commando.Client({
 	disableEveryone: true,
 	messageCacheMaxSize: 50,
 	disabledEvents: ['TYPING_START'],
+	partials: ['MESSAGE', 'REACTION'],
 });
 
 Winterbot.dispatcher.addInhibitor(msg => {
@@ -43,7 +44,7 @@ Winterbot.registry
 		['config', 'Config commands'],
 		['mod', 'Mod commands'],
 		['owner', 'Owner commands'],
-		['starboard', 'Starboard (idea board) commands'],
+		['ideavault', 'Idea vault commands'],
 		// ['music', 'music commands'],
 	])
 	.registerDefaultTypes()
@@ -102,16 +103,13 @@ Winterbot.fetches = {
 Winterbot.on('ready', () => {
 	Winterbot.dmManager = new (require('./utils/classes/DmManager.js'))(Winterbot);
 
-	starboard.buildStarboardCache(Array.from(Winterbot.guilds.cache.keys())).then(c => {
-		console.log(`Cached ${c} starposts for ${Array.from(Winterbot.guilds.cache.keys()).length} guilds!`);
-	});
 	console.log(`{green}Ready!`);
 });
 
 Winterbot.once('ready', () => {
 	if (secure.fetches.youtube) Winterbot.fetches.youtube.run();
 	if (secure.fetches.twitter) Winterbot.fetches.twitter.run();
-})
+});
 
 Winterbot.on('message', (msg) => {
 	if (!msg.author) return;
@@ -125,123 +123,10 @@ Winterbot.on('message', (msg) => {
 	});
 });
 
-const events = {
-	MESSAGE_REACTION_ADD: 'messageReactionAdd',
-	MESSAGE_REACTION_REMOVE: 'messageReactionRemove',
-};
+// subscribe the idea vault's events
+Winterbot.on('messageReactionAdd', ideaVault.messageReactionAdd);
 
-
-// 
-// this entire starboard thing is a bit of a mess
-// i promise i'll clean it up sometime
-//
-Winterbot.on('raw', async event => {
-	if (!events.hasOwnProperty(event.t)) return;
-	const { d: data } = event;
-	if (data.emoji.name !== '💡') return;
-
-	const user = await Winterbot.users.fetch(data.user_id);
-	const channel = await Winterbot.channels.fetch(data.channel_id) || await user.createDM();
-	if (!(await channel.messages.fetch(data.message_id))) return;
-
-	const message = await channel.messages.fetch(data.message_id);
-
-	const reaction = message.reactions.cache.get(data.emoji.name) || { count: 0, emoji: { name: '💡', id: null, animated: false }, message: message };
-
-	//Winterbot.emit(events[event.t], reaction, user);
-
-	if (!message.channel.parent || message.channel.parent.id !== secure.starboardCategory) return;
-
-	if (event.t === 'MESSAGE_REACTION_ADD') {
-		if (!starboard.isEnabled(reaction.message)) return;
-		if (starboard.isStarpost(reaction.message)) return;
-
-		const tiers = starboard.getTiers(message.guild.id).sort((a, b) => b.limit - a.limit); // descending order
-
-		let tier = null;
-
-		for (let i = 0; i < tiers.length; i++) {
-			if (reaction.count >= tiers[i].limit) {
-				tier = tiers[i];
-				break;
-			}
-		}
-		if (!tier) return;
-
-		// if (starboard.getLimit(reaction.message) > reaction.count) return;
-
-		const channelID = tier.channel;
-
-		const existingStarpost = starboard.isStarposted(reaction.message);
-		if (existingStarpost) {
-			oldTier = tiers.find(tier => {
-				return tier.channel === existingStarpost.starchannel;
-			})
-			if (existingStarpost.starchannel != channelID && (!oldTier || oldTier.limit < tier.limit)) {
-				reaction.message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(msg => {
-					msg.delete();
-				}).catch(e => console.log(e));
-				reaction.message.guild.channels.cache.get(channelID).send({ embed: createStarboardEmbed(reaction.message, reaction.count) }).then(msg => {
-					starboard.addStarpost(reaction.message, msg.id, channelID);
-				}).catch(e => console.log(e));;
-			}
-			else {
-				return reaction.message.guild.channels.cache.get(existingStarpost.starchannel).messages.fetch(existingStarpost.starpost).then(msg => {
-					msg.edit({ embed: createStarboardEmbed(reaction.message, reaction.count) });
-				}).catch(e => console.log(e));;
-			}
-		}
-		else {
-			reaction.message.guild.channels.cache.get(channelID).send({ embed: createStarboardEmbed(reaction.message, reaction.count) }).then(msg => {
-				starboard.addStarpost(reaction.message, msg.id, channelID);
-			}).catch(e => console.log(e));;
-		}
-	}
-	else if (event.t === 'MESSAGE_REACTION_REMOVE') {
-		if (!starboard.isEnabled(reaction.message)) return;
-		if (starboard.isStarpost(reaction.message)) return;
-		const existingStarpost = starboard.isStarposted(reaction.message);
-		if (!existingStarpost) return;
-		console.log('existingStarpost', existingStarpost)
-		console.log('message', message.id, message.channel);
-		const channelID = existingStarpost.starchannel;
-		reaction.message.guild.channels.cache.get(channelID).messages.fetch(existingStarpost.starpost).then(msg => {
-			msg.edit({ embed: createStarboardEmbed(reaction.message, reaction.count) });
-		}).catch(e => console.log(e));;
-	}
-
-});
-
-// Winterbot.on('messageReactionAdd', (reaction, user) => {
-// 	if (reaction.emoji.name !== '💡') return;
-// 	if (!starboard.isEnabled(reaction.message)) return;
-// 	if (starboard.getLimit(reaction.message) > reaction.count) return;
-// 	if (starboard.isStarpost(reaction.message)) return;
-
-// 	const channelID = starboard.getChannel(reaction.message);
-
-// 	if (starboard.isStarposted(reaction.message)) {
-// 		return reaction.message.guild.channels.cache.get(channelID).messages.fetch(starboard.getStarpost(reaction.message)).then(msg => {
-// 			msg.edit({embed: createStarboardEmbed(reaction.message, reaction.count)});
-// 		});
-// 	};
-
-// 	reaction.message.guild.channels.cache.get(channelID).send({embed: createStarboardEmbed(reaction.message, reaction.count)}).then(msg => {
-// 		starboard.addStarpost(reaction.message, msg.id);
-// 	});
-// });
-
-// Winterbot.on('messageReactionRemove', (reaction, user) => {
-// 	if (reaction.emoji.name !== '💡') return;
-// 	if (!starboard.isEnabled(reaction.message)) return;
-// 	if (starboard.isStarpost(reaction.message)) return;
-// 	if (!starboard.isStarposted(reaction.message)) return;
-
-// 	const channelID = starboard.getChannel(reaction.message);
-// 	reaction.message.guild.channels.cache.get(channelID).messages.fetch(starboard.getStarpost(reaction.message)).then(msg => {
-// 		msg.edit({embed: createStarboardEmbed(reaction.message, reaction.count)});
-// 	});
-// });
+Winterbot.on('messageReactionRemove', ideaVault.messageReactionRemove);
 
 function createStarboardEmbed(msg, count) {
 	const embed = new MessageEmbed({
@@ -298,7 +183,7 @@ function createStarboardEmbed(msg, count) {
 
 function createTranslateEmbed(msg, language) {
 	const embed = new MessageEmbed({
-		description: '[Original message](' + msg.url + ') ' + language
+		description: '[Original message](' + msg.url + ') ' + language,
 	});
 	embed.setColor(msg.member.displayColor || 16777215);
 	return embed;
@@ -338,14 +223,14 @@ roleMap.set('418726789444272129', '651548709527617557');    // musician
 roleMap.set('694608130629435432', '709469819874836541');    // john
 
 Winterbot.on('guildMemberAdd', member => {
-    /**
+	/**
      * transfer roles from old server member to new server member
      */
 	if (member.guild.id != newGuildId) return;  // if join is not in new server, return
-	let oldMember = Winterbot.guilds.resolve(oldGuildId).members.resolve(member.id);
+	const oldMember = Winterbot.guilds.resolve(oldGuildId).members.resolve(member.id);
 	if (!oldMember) return; // if user is not in old server, return
 	oldMember.roles.cache.forEach((v, k) => {
-		let newId = roleMap.get(k);
+		const newId = roleMap.get(k);
 		if (newId) member.roles.add(newId); // if role is in map, add role
 	});
 });
@@ -357,13 +242,14 @@ const mmxTeamCcAgreedRoleId = '709406460450177094';
 Winterbot.on('guildMemberUpdate', (oldMember, newMember) => {
 	// if the roles have changed, do stuff
 	if (oldMember.roles.cache.keys() != newMember.roles.cache.keys()) {
-		let roles = newMember.roles.cache.keyArray(); // get updated roles
+		const roles = newMember.roles.cache.keyArray(); // get updated roles
 		// if member has both roles and not the combined role, add combined role
-		if (roles.includes(mmxTeamRoleId) && roles.includes(ccAgreedRoleId) && !roles.includes(mmxTeamCcAgreedRoleId))
+		if (roles.includes(mmxTeamRoleId) && roles.includes(ccAgreedRoleId) && !roles.includes(mmxTeamCcAgreedRoleId)) {
 			newMember.roles.add(mmxTeamCcAgreedRoleId);
 		// if member does not have both roles but has combined role, remove combined role
-		else if ((!roles.includes(mmxTeamRoleId) || !roles.includes(ccAgreedRoleId)) && roles.includes(mmxTeamCcAgreedRoleId))
+		} else if ((!roles.includes(mmxTeamRoleId) || !roles.includes(ccAgreedRoleId)) && roles.includes(mmxTeamCcAgreedRoleId)) {
 			newMember.roles.remove(mmxTeamCcAgreedRoleId);
+		};
 	}
 });
 
@@ -423,14 +309,14 @@ Winterbot.on('message', async (msg) => {
 	toChannel.fetchWebhooks().then(async webhooks => {
 		if (webhooks.first()) return webhooks.first();
 		else {
-			return await toChannel.createWebhook('Translation', {})
+			return await toChannel.createWebhook('Translation', {});
 		}
 	}).then(async (webhook) => {
 		if (!webhook) return console.error('No Translation Webhook');
 		const translated = await translation.translateText(msg.content);
 		const language = await translation.detectLanguage(msg.content);
-		
-		const embed = createTranslateEmbed(msg, `(${translation.emoji(language[0][0].split('-')[0])} ${language[0][1]})`)
+
+		const embed = createTranslateEmbed(msg, `(${translation.emoji(language[0][0].split('-')[0])} ${language[0][1]})`);
 		webhook.send(translated[0], {
 			username: msg.member.nickname ? `${msg.member.nickname} (${msg.author.username}#${msg.author.discriminator})` : `${`${msg.author.username}#${msg.author.discriminator}`}`,
 			avatarURL: msg.author.avatarURL(),
@@ -438,10 +324,9 @@ Winterbot.on('message', async (msg) => {
 			files: msg.attachments.array(),
 			allowedMentions: {
 				parse: [],
-			}
+			},
 		});
-		
-	})
+	});
 });
 
 Winterbot.on('message', async (msg) => {
@@ -472,7 +357,7 @@ const colours = {
 
 const oldLog = console.log;
 
-global.console.log = function (...args) {
+global.console.log = function(...args) {
 	args = args.map(arg => {
 		if (typeof arg === 'string') {
 			/* eslint-disable guard-for-in */

@@ -1,6 +1,5 @@
 const Sequelize = require('sequelize');
 const Database = require('../../database.js');
-const Op = Sequelize.Op;
 
 const db = Database.db;
 
@@ -26,7 +25,7 @@ module.exports = {
 		return subroles.destroy({
 			where: {
 				role: role,
-			}
+			},
 		});
 	},
 
