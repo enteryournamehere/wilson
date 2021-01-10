@@ -125,6 +125,21 @@ Winterbot.on('message', (msg) => {
 	});
 });
 
+
+/* Crossposting messages from webhooks in announcement channels */
+Winterbot.on('message', (msg) => {
+	if (!msg.webhookID) {
+		return; // Only handle messages originating from webhooks
+	}
+	if (msg.channel.type === 'news') {
+		if ( msg.crosspostable ) {
+			msg.crosspost();
+		}else{
+			console.info('Message in newstype channel was not crosspostable.', msg.id);
+		}
+	}
+}
+
 const events = {
 	MESSAGE_REACTION_ADD: 'messageReactionAdd',
 	MESSAGE_REACTION_REMOVE: 'messageReactionRemove',
