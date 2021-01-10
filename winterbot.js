@@ -212,37 +212,6 @@ Winterbot.on('raw', async event => {
 
 });
 
-// Winterbot.on('messageReactionAdd', (reaction, user) => {
-// 	if (reaction.emoji.name !== '💡') return;
-// 	if (!starboard.isEnabled(reaction.message)) return;
-// 	if (starboard.getLimit(reaction.message) > reaction.count) return;
-// 	if (starboard.isStarpost(reaction.message)) return;
-
-// 	const channelID = starboard.getChannel(reaction.message);
-
-// 	if (starboard.isStarposted(reaction.message)) {
-// 		return reaction.message.guild.channels.cache.get(channelID).messages.fetch(starboard.getStarpost(reaction.message)).then(msg => {
-// 			msg.edit({embed: createStarboardEmbed(reaction.message, reaction.count)});
-// 		});
-// 	};
-
-// 	reaction.message.guild.channels.cache.get(channelID).send({embed: createStarboardEmbed(reaction.message, reaction.count)}).then(msg => {
-// 		starboard.addStarpost(reaction.message, msg.id);
-// 	});
-// });
-
-// Winterbot.on('messageReactionRemove', (reaction, user) => {
-// 	if (reaction.emoji.name !== '💡') return;
-// 	if (!starboard.isEnabled(reaction.message)) return;
-// 	if (starboard.isStarpost(reaction.message)) return;
-// 	if (!starboard.isStarposted(reaction.message)) return;
-
-// 	const channelID = starboard.getChannel(reaction.message);
-// 	reaction.message.guild.channels.cache.get(channelID).messages.fetch(starboard.getStarpost(reaction.message)).then(msg => {
-// 		msg.edit({embed: createStarboardEmbed(reaction.message, reaction.count)});
-// 	});
-// });
-
 function createStarboardEmbed(msg, count) {
 	const embed = new MessageEmbed({
 		author: {
@@ -366,55 +335,6 @@ Winterbot.on('guildMemberUpdate', (oldMember, newMember) => {
 			newMember.roles.remove(mmxTeamCcAgreedRoleId);
 	}
 });
-
-// const messageBridge = {
-// 	guilds: secure.guildsToBridge,
-// 	getChannels: (guild) => {
-// 		return Winterbot.guilds.cache.get(guild).channels.cache.filter(c => c.type === 'text').map(x => { return { guild: guild, channel: x.id, name: x.name } });
-// 	},
-// 	pairs: [],
-// }
-
-// if (secure.guildsToBridge && secure.guildsToBridge.length && secure.guildsToBridge.length == 2) Winterbot.once('ready', () => {
-// 	messageBridge.one = messageBridge.getChannels(messageBridge.guilds[0]);
-// 	messageBridge.two = messageBridge.getChannels(messageBridge.guilds[1]);
-// 	messageBridge.pairs = [];
-// 	messageBridge.one.forEach(channel => {
-// 		const other = messageBridge.two.find(secondChannel => secondChannel.name === channel.name);
-// 		if (other) messageBridge.pairs.push([channel, other]);
-// 	});
-
-// 	messageBridge.pairs.forEach(pair => {
-// 		pair.forEach(channelObj => {
-// 			const textChannel = Winterbot.guilds.cache.get(channelObj.guild).channels.cache.get(channelObj.channel);
-// 			textChannel.fetchWebhooks().then(webhooks => {
-// 				if (webhooks.first()) channelObj.webhook = webhooks.first();
-// 				else {
-// 					textChannel.createWebhook('MessageBridge', {})
-// 				}
-// 			})
-// 		})
-// 	});
-
-// 	Winterbot.on('message', (msg) => {
-// 		if (msg.webhookID) return;
-// 		if (msg.channel.parent && (msg.channel.parent.id === '649172890360741922' || msg.channel.parent.id === '413366615300767764')) return;
-// 		channelPair = messageBridge.pairs.find(pair => {
-// 			return pair.some(obj => obj.channel == msg.channel.id);
-// 		});
-// 		if (!channelPair) return;
-// 		const otherChannel = channelPair.find(obj => obj.channel !== msg.channel.id);
-// 		otherChannel.webhook.send(msg.content, {
-// 			username: msg.member.nickname ? `${msg.member.nickname} (${msg.author.username}#${msg.author.discriminator})` : `${msg.author.username}#${msg.author.discriminator}`,
-// 			avatarURL: msg.author.avatarURL(),
-// 			embeds: msg.embeds,
-// 			files: msg.attachments.array(),
-// 			allowedMentions: {
-// 				parse: [],
-// 			}
-// 		});
-// 	});
-// });
 
 Winterbot.on('message', async (msg) => {
 	if (msg.webhookID) return;
