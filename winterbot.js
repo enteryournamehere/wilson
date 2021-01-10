@@ -5,6 +5,7 @@ const SequelizeProvider = require('./utils/Sequelize');
 const database = require('./database.js');
 const updates = require('./utils/models/updates.js');
 const starboard = require('./utils/models/starboard.js');
+const crosspostconf = require('./utils/models/crosspostconf.js');
 const { MessageEmbed } = require('discord.js');
 const translation = require('./utils/translation.js');
 
@@ -123,6 +124,26 @@ Winterbot.on('message', (msg) => {
 			msg.delete();
 		}
 	});
+});
+
+
+/* Crossposting messages from webhooks in announcement channels */
+Winterbot.on('message', (msg) => {
+	if (!msg.webhookID) {
+		return; // Only handle messages originating from webhooks
+	}
+	if (!msg.channel.type === 'news') {
+		return; //Messages outside of news channels can't be crossposted
+	}
+	if (!crosspostconf.getCrosspostStatus(msg.channel.id)) {
+		return; //Crossposting for this channel disabled
+	}
+	if ( msg.crosspostable ) { //probably redundand with the channel type. But I can't test this, and it doesn't hurt.
+		msg.crosspost();
+	}else{
+		console.info('Message in newstype channel was not crosspostable.', msg.id);
+	}
+	
 });
 
 const events = {
