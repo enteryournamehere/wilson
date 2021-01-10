@@ -138,7 +138,7 @@ Winterbot.on('message', (msg) => {
 			console.info('Message in newstype channel was not crosspostable.', msg.id);
 		}
 	}
-}
+});
 
 const events = {
 	MESSAGE_REACTION_ADD: 'messageReactionAdd',
