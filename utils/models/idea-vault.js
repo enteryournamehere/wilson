@@ -37,11 +37,11 @@ const tiers = db.define('ideatiers', {
 		type: Sequelize.STRING(25),
 		primaryKey: true,
 	},
-	treshold: Sequelize.INTEGER,
+	threshold: Sequelize.INTEGER,
 }, {
 	uniqueKeys: {
 		'ideatiers_unique': {
-			fields: ['guild', 'treshold'],
+			fields: ['guild', 'threshold'],
 		},
 	},
 });
@@ -61,7 +61,7 @@ const comments = db.define('ideacomments', {
 
 db.sync();
 
-function getTiers(guild) {
+function getTiers(guild) { // 
 	return tiers.findAll({
 		where: {
 			guild: guild,
@@ -69,11 +69,11 @@ function getTiers(guild) {
 	});
 };
 
-function setTier(guild, channel, treshold) {
+function setTier(guild, channel, threshold) {
 	return tiers.upsert({
 		guild: guild,
 		channel: channel,
-		treshold: treshold,
+		threshold: threshold,
 	});
 };
 
@@ -222,7 +222,7 @@ async function messageReactionAdd(reaction, user) {
 
 	// sorted in descending order.
 	const tier = await getTiers(reaction.message.guild.id).then(tiers => {
-		return tiers.sort((a, b) => b.treshold - a.treshold).find(tier => reaction.count >= tier.treshold);
+		return tiers.sort((a, b) => b.threshold - a.threshold).find(tier => reaction.count >= tier.threshold);
 	});
 	if (!tier) return;
 
@@ -293,7 +293,7 @@ async function messageReactionRemove(reaction, user) {
 
 	// Sorted in descending order.
 	const tier = await getTiers(reaction.message.guild.id).then(tiers => {
-		return tiers.sort((a, b) => b.treshold - a.treshold).find(tier => reaction.count >= tier.treshold);
+		return tiers.sort((a, b) => b.threshold - a.threshold).find(tier => reaction.count >= tier.threshold);
 	});
 	if (!tier) {
 		// Let's remove, but reserve the idea.

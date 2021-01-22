@@ -46,11 +46,11 @@ module.exports = class IdeaVaultTierCommand extends Command {
 			case '': // Do nothing. We want the code below to execute.
 			case 'list':
 				const tiers = await ideaVault.getTiers(msg.guild.id).then(tiers => {
-					tiers.sort((a, b) => a.treshold - b.treshold);
+					tiers.sort((a, b) => a.threshold - b.threshold);
 				});
 				let response = 'The current tiers for the idea vault:\n';
 				for (let i = 0; i<tiers.length; i++) {
-					response += `   <#${tiers[i].channel}> - ${tiers[i].treshold} 💡`;
+					response += `   <#${tiers[i].channel}> - ${tiers[i].threshold} 💡`;
 				};
 				await msg.say(response);
 				break;
