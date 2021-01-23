@@ -1,6 +1,7 @@
 /* eslint-disable new-cap */
 const Sequelize = require('sequelize');
 const { db } = require('../../database.js');
+const secure = require('../../secure.json');
 const { MessageEmbed } = require('discord.js');
 
 const ideas = db.define('ideas', {
@@ -221,7 +222,8 @@ async function messageReactionAdd(reaction, user) {
 
 	await reaction.fetch();
 	if (!isEnabled(reaction.message.guild.id)) return;
-
+	// TODO: Make channel configurable per guild
+	if (!reaction.message.channel.parent || reaction.message.channel.parent.id !== secure.ideaVaultCategory) return;
 	// People may try to react on posts instead of their linked message
 	if (await getIdeaByPost(reaction.message.id)) return;
 
@@ -284,6 +286,8 @@ async function messageReactionRemove(reaction, user) {
 
 	await reaction.fetch();
 	if (!isEnabled(reaction.message.guild.id)) return;
+	// TODO: Make channel configurable per guild
+	if (!reaction.message.channel.parent || reaction.message.channel.parent.id !== secure.ideaVaultCategory) return;
 
 	const idea = await getIdeaByMsg(reaction.message.id);
 	if (!idea) return;
