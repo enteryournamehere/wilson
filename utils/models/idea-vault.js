@@ -170,7 +170,7 @@ async function generatePostEmbed(id, msg, count, comments = []) {
 	if (msg.attachments.size) {
 		const att = msg.attachments.first();
 		const imgtypes = ['jpg', 'jpeg', 'png', 'gif'];
-		if (imgtypes.includes(att.name.split('.').slice(-1)[0]).toLowerCase()) {
+		if (imgtypes.includes(att.name.split('.').slice(-1)[0].toLowerCase())) {
 			embed.setImage(att.url);
 		} else {
 			embed.addField('Attachments', att.url);
@@ -183,12 +183,15 @@ async function generatePostEmbed(id, msg, count, comments = []) {
 				break;
 			case 'video':
 				embed.setTitle(msgEmbed.title);
+				embed.setURL(msgEmbed.url);
+				if (msgEmbed.thumbnail) embed.setThumbnail(msgEmbed.thumbnail.url);
 				break;
 
 			case 'link':
+			case 'article':
 				embed.setTitle(msgEmbed.title);
 				embed.setURL(msgEmbed.url);
-				embed.setThumbnail(msgEmbed.thumbnail.url);
+				if (msgEmbed.thumbnail) embed.setThumbnail(msgEmbed.thumbnail.url);
 				break;
 
 			case 'rich':
