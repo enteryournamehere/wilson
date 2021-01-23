@@ -1,7 +1,7 @@
 const Sequelize = require('sequelize');
 const secure = require('./secure.json');
 
-class AeiouDatabase {
+class WilsonDatabase {
 	constructor() {
 		this.db = new Sequelize(secure.dbName, secure.dbUser, secure.dbPassword, {
 			dialect: 'mysql',
@@ -20,4 +20,4 @@ class AeiouDatabase {
 	}
 }
 
-module.exports = new AeiouDatabase();
+module.exports = new WilsonDatabase();

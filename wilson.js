@@ -14,7 +14,7 @@ const updatesConfig = {
 	webhooks: secure.webhooks,
 };
 
-const Winterbot = new Commando.Client({
+const Wilson = new Commando.Client({
 	owner: secure.owners,
 	commandPrefix: secure.prefix,
 	unknownCommandResponse: false,
@@ -24,7 +24,7 @@ const Winterbot = new Commando.Client({
 	partials: ['MESSAGE', 'REACTION'],
 });
 
-Winterbot.dispatcher.addInhibitor(msg => {
+Wilson.dispatcher.addInhibitor(msg => {
 	if (msg.webhookID) return 'nope';
 	return false;
 });
@@ -35,9 +35,9 @@ const youtubeWebhook = new Webhook(updatesConfig.webhooks.youtube);
 
 database.start();
 
-Winterbot.setProvider(new SequelizeProvider(database.db)).catch(console.error);
+Wilson.setProvider(new SequelizeProvider(database.db)).catch(console.error);
 
-Winterbot.registry
+Wilson.registry
 	.registerGroups([
 		['fun', 'Fun commands'],
 		['search', 'Search commands'],
@@ -57,7 +57,7 @@ Winterbot.registry
 	.registerCommandsIn(path.join(__dirname, 'commands'));
 
 function twitter2Fetch() {
-	Winterbot.fetches.twitter.last = Date.now();
+	Wilson.fetches.twitter.last = Date.now();
 	require('./twitter2.js').fetch().then((x) => {
 		if (!x.new) return;
 		twitterWebhook.send(`<@&${updatesConfig.roles.twitter}>`, x.embed).catch(() => { }).then(() => {
@@ -74,7 +74,7 @@ function twitter2Fetch() {
 
 
 function youtube2Fetch() {
-	Winterbot.fetches.youtube.last = Date.now();
+	Wilson.fetches.youtube.last = Date.now();
 	require('./youtube2.js').fetch().then((x) => {
 		if (!x.new) return;
 		youtubeWebhook.send(`<@&${updatesConfig.roles.youtube}>`, x.embed).catch(() => { }).then(() => {
@@ -89,7 +89,7 @@ function youtube2Fetch() {
 	});
 }
 
-Winterbot.fetches = {
+Wilson.fetches = {
 	youtube: {
 		run: youtube2Fetch,
 		last: 0,
@@ -100,18 +100,18 @@ Winterbot.fetches = {
 	},
 };
 
-Winterbot.on('ready', () => {
-	Winterbot.dmManager = new (require('./utils/classes/DmManager.js'))(Winterbot);
+Wilson.on('ready', () => {
+	Wilson.dmManager = new (require('./utils/classes/DmManager.js'))(Wilson);
 
 	console.log(`{green}Ready!`);
 });
 
-Winterbot.once('ready', () => {
-	if (secure.fetches.youtube) Winterbot.fetches.youtube.run();
-	if (secure.fetches.twitter) Winterbot.fetches.twitter.run();
+Wilson.once('ready', () => {
+	if (secure.fetches.youtube) Wilson.fetches.youtube.run();
+	if (secure.fetches.twitter) Wilson.fetches.twitter.run();
 });
 
-Winterbot.on('message', (msg) => {
+Wilson.on('message', (msg) => {
 	if (!msg.author) return;
 	if (!msg.guild) return;
 	if (!msg.content.match(/https?:\/\//)) return;
@@ -127,9 +127,9 @@ Winterbot.on('message', (msg) => {
 });
 
 // subscribe the idea vault's events
-Winterbot.on('messageReactionAdd', ideaVault.messageReactionAdd);
+Wilson.on('messageReactionAdd', ideaVault.messageReactionAdd);
 
-Winterbot.on('messageReactionRemove', ideaVault.messageReactionRemove);
+Wilson.on('messageReactionRemove', ideaVault.messageReactionRemove);
 
 function createTranslateEmbed(msg, language) {
 	const embed = new MessageEmbed({
@@ -172,12 +172,12 @@ roleMap.set('418683641850232833', '651548778746216448');    // GFX designer
 roleMap.set('418726789444272129', '651548709527617557');    // musician
 roleMap.set('694608130629435432', '709469819874836541');    // john
 
-Winterbot.on('guildMemberAdd', member => {
+Wilson.on('guildMemberAdd', member => {
 	/**
      * transfer roles from old server member to new server member
      */
 	if (member.guild.id != newGuildId) return;  // if join is not in new server, return
-	const oldMember = Winterbot.guilds.resolve(oldGuildId).members.resolve(member.id);
+	const oldMember = Wilson.guilds.resolve(oldGuildId).members.resolve(member.id);
 	if (!oldMember) return; // if user is not in old server, return
 	oldMember.roles.cache.forEach((v, k) => {
 		const newId = roleMap.get(k);
@@ -189,7 +189,7 @@ const mmxTeamRoleId = '650660016755310592';
 const ccAgreedRoleId = '709386821850759178';
 const mmxTeamCcAgreedRoleId = '709406460450177094';
 
-Winterbot.on('guildMemberUpdate', (oldMember, newMember) => {
+Wilson.on('guildMemberUpdate', (oldMember, newMember) => {
 	// if the roles have changed, do stuff
 	if (oldMember.roles.cache.keys() != newMember.roles.cache.keys()) {
 		const roles = newMember.roles.cache.keyArray(); // get updated roles
@@ -252,7 +252,7 @@ Winterbot.on('guildMemberUpdate', (oldMember, newMember) => {
 // 	});
 // });
 
-Winterbot.on('message', async (msg) => {
+Wilson.on('message', async (msg) => {
 	if (msg.webhookID) return;
 	if (msg.channel.id !== secure.translation.from) return;
 	const toChannel = await msg.guild.channels.cache.get(secure.translation.to);
@@ -279,19 +279,19 @@ Winterbot.on('message', async (msg) => {
 	});
 });
 
-Winterbot.on('message', async (msg) => {
-	if (!msg.author.bot && !msg.content && msg.channel.type == 'dm') Winterbot.dmManager.newMessage(msg);
+Wilson.on('message', async (msg) => {
+	if (!msg.author.bot && !msg.content && msg.channel.type == 'dm') Wilson.dmManager.newMessage(msg);
 });
 
-Winterbot.on('unknownCommand', (msg) => {
-	if (!msg.author.bot && msg.channel.type == 'dm') Winterbot.dmManager.newMessage(msg);
+Wilson.on('unknownCommand', (msg) => {
+	if (!msg.author.bot && msg.channel.type == 'dm') Wilson.dmManager.newMessage(msg);
 });
 
-Winterbot.on('error', (msg) => {
+Wilson.on('error', (msg) => {
 	console.log('{red}Error!{reset}', msg);
 });
 
-Winterbot.login(secure.token);
+Wilson.login(secure.token);
 
 const colours = {
 	black: '\x1b[30m',
