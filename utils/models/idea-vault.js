@@ -147,7 +147,9 @@ function isEnabled(guild) {
 			id: guild,
 		},
 	}).then(result => {
-		return result.enabled;
+		// Undefined evaluates to false. If it is undefined
+		// we assume it's disabled, otherwise return the result.
+		return result ? result.enabled : false
 	});
 };
 

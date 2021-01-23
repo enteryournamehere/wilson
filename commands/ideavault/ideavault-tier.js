@@ -48,6 +48,9 @@ module.exports = class IdeaVaultTierCommand extends Command {
 				const tiers = await ideaVault.getTiers(msg.guild.id).then(tiers => {
 					tiers.sort((a, b) => a.threshold - b.threshold);
 				});
+				if (!tiers) {
+					return await msg.say('There are no tiers set up for the idea vault.');
+				};
 				let response = 'The current tiers for the idea vault:\n';
 				for (let i = 0; i<tiers.length; i++) {
 					response += `   <#${tiers[i].channel}> - ${tiers[i].threshold} 💡`;
