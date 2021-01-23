@@ -113,11 +113,14 @@ Winterbot.once('ready', () => {
 
 Winterbot.on('message', (msg) => {
 	if (!msg.author) return;
+	if (!msg.guild) return;
 	if (!msg.content.match(/https?:\/\//)) return;
 	msg.guild.members.fetch(msg.author).then((member) => {
 		const beenHereMinutes = (Date.now() - member.joinedTimestamp) / 1000 / 60;
 		if (beenHereMinutes < 10) {
-			msg.reply('To prevent spam and bots, please wait 10 minutes before sending links');
+			msg.reply('welcome to the Wintergatan Discord server! To prevent spam and bots, there is a 10 minute wait time before new members can send links, so please try again in a moment. Thank you!').then(reply => {
+                setTimeout(() => {reply.delete()}, 60 * 1000);
+            });
 			msg.delete();
 		}
 	});
