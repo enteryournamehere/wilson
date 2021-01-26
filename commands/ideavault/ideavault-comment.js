@@ -7,8 +7,8 @@ module.exports = class CommentCommand extends Command {
 		super(client, {
 			name: 'ideavault-comment',
 			group: 'ideavault',
-			memberName: 'comment',
-			aliases: ['c'],
+			memberName: 'ideavault-comment',
+			aliases: ['iv-comment', 'c', 'comment'],
 			description: 'Comment on an idea',
 			examples: ['.comment 132 This is being worked on, see [here](https://example.com)'],
 			guildOnly: true,
@@ -36,7 +36,7 @@ module.exports = class CommentCommand extends Command {
 
 	async run(msg, {id, comment}) {
 		const idea = await ideaVault.getIdeaByID(id);
-		if (!idea) return msg.say('I couldn\'t find that idea, sorry!');
+		if (!idea || idea.guild !== msg.guild.id) return msg.say('I couldn\'t find that idea, sorry!');
 
 		await ideaVault.upsertComment(id, msg.author.id, comment);
 
@@ -53,6 +53,8 @@ module.exports = class CommentCommand extends Command {
 			embed.addField('💬 Comment from ' + msg.member.displayName, comment);
 		};
 
-		post.edit({ embed: embed });
+		await post.edit({ embed: embed });
+
+		msg.say('Comment added!');
 	}
 };
