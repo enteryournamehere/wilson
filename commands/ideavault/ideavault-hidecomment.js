@@ -45,15 +45,17 @@ module.exports = class CommentCommand extends Command {
 
 		const post = await msg.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
 		const embed = post.embeds[0];
+        
+        const commenterName = (await msg.guild.members.fetch(user)).displayName;
 
-		const index = embed.fields.indexOf(embed.fields.find(item => item.name === '💬 Comment from ' + (await msg.guild.members.fetch(user)).displayName));
+		const index = embed.fields.indexOf(embed.fields.find(item => item.name === '💬 Comment from ' + commenterName));
 
 		if (index !== -1) {
 			// Delete the field
 			embed.spliceFields(index, 1);
 		} else {
 			// Add a new field
-			embed.addField('💬 Comment from ' + (await msg.guild.members.fetch(user)).displayName, comment.value);
+			embed.addField('💬 Comment from ' + commenterName, comment.value);
 		};
 
 		await post.edit({ embed: embed });
