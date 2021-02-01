@@ -114,13 +114,13 @@ function toggleCommentVisibility(id, author) {
 			idea: id,
 			author: author
 		}
-	}).then(idea => {
-		if (idea === null) throw new Error('That user hasn\'t commented on that idea.');
-		idea.dataValues.visible = !idea.dataValues.visible;
+	}).then(comment => {
+		if (comment === null) throw new Error('That user hasn\'t commented on that idea.');
+		comment.dataValues.visible = !comment.dataValues.visible;
 		return comments.upsert({
-			...idea.dataValues
+			...comment.dataValues
 		}).then(() => {
-			return idea.dataValues;
+			return comment.dataValues;
 		})
 	})
 }
