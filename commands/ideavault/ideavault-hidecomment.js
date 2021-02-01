@@ -38,10 +38,9 @@ module.exports = class CommentCommand extends Command {
 		const idea = await ideaVault.getIdeaByID(id);
 		if (!idea || idea.guild !== msg.guild.id) return msg.say('I couldn\'t find that idea, sorry!');
 
-		const comment = await ideaVault.toggleCommentVisibility(id, msg.author.id, user.id).catch(e => {
+		const comment = await ideaVault.toggleCommentVisibility(id, user.id).catch(e => {
             msg.say(e.message)
         });
-        console.log(comment);
         if (!comment) return;
 
 		const post = await msg.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
