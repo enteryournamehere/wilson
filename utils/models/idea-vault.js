@@ -57,6 +57,10 @@ const comments = db.define('ideacomments', {
 		type: Sequelize.STRING(25),
 		primaryKey: true,
 	},
+	visible: {
+		type: Sequelize.BOOLEAN,
+		defaultValue: true,
+	},
 	value: Sequelize.STRING(1024),
 });
 
@@ -100,8 +104,27 @@ function upsertComment(id, author, value) {
 		idea: id,
 		author: author,
 		value: value,
+		visible: true,
 	});
 };
+
+function toggleCommentVisibility(id, author) {
+	return comments.findOne({
+		where: {
+			idea: id,
+			author: author
+		}
+	}).then(idea => {
+		if (idea === null) throw new Error('That user hasn\'t commented on that idea.');
+		idea.dataValues.visible = !idea.dataValues.visible;
+		return comments.upsert({
+			...idea.dataValues
+		}).then(() => {
+			return idea.dataValues;
+		})
+	})
+}
+
 
 function getIdeaByMsg(msg) {
 	return ideas.findOne({
@@ -332,6 +355,7 @@ module.exports = {
 	setTier,
 	removeTier,
 	upsertComment,
+	toggleCommentVisibility,
 	getIdeaByMsg,
 	getIdeaByPost,
 	getIdeaByID,
