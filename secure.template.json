@@ -21,6 +21,13 @@
         "id": "idididid",
         "callback": "uri"
     },
+    "airtable": {
+      "base": "string starting with app in url",
+      "apiKey": "from account page",
+      "tables": {
+        "ideas": "literal table name"
+      }
+    },
     "webhooks": {
 		"youtube": "discord webhook link",
 		"twitter": "discord webhook link",

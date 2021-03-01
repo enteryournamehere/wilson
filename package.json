@@ -10,6 +10,7 @@
   "license": "AGPL-3.0-only",
   "dependencies": {
     "@google-cloud/translate": "^6.1.0",
+    "airtable": "^0.10.1",
     "countries-list": "^2.6.1",
     "db-country": "^1.0.1",
     "discord.js": "^12.5.1",
