@@ -1,11 +1,11 @@
 const secure = require('./secure.json');
-const Commando = require('discord.js-commando');
 const path = require('path');
 const SequelizeProvider = require('./utils/Sequelize');
 const database = require('./database.js');
 const updates = require('./utils/models/updates.js');
 const ideaVault = require('./utils/models/idea-vault.js');
 const { MessageEmbed } = require('discord.js');
+const { Wilson } = require('./utils/wilson');
 const translation = require('./utils/translation.js');
 
 const updatesConfig = {
@@ -13,16 +13,6 @@ const updatesConfig = {
 	roles: secure.roles,
 	webhooks: secure.webhooks,
 };
-
-const Wilson = new Commando.Client({
-	owner: secure.owners,
-	commandPrefix: secure.prefix,
-	unknownCommandResponse: false,
-	disableEveryone: true,
-	messageCacheMaxSize: 50,
-	disabledEvents: ['TYPING_START'],
-	partials: ['MESSAGE', 'REACTION'],
-});
 
 Wilson.dispatcher.addInhibitor(msg => {
 	if (msg.webhookID) return 'nope';
@@ -119,17 +109,21 @@ Wilson.on('message', (msg) => {
 		const beenHereMinutes = (Date.now() - member.joinedTimestamp) / 1000 / 60;
 		if (beenHereMinutes < 10) {
 			msg.reply('welcome to the Wintergatan Discord server! To prevent spam and bots, there is a 10 minute wait time before new members can send links, so please try again in a moment. Thank you!').then(reply => {
-                setTimeout(() => {reply.delete()}, 60 * 1000);
-            });
+				setTimeout(() => {
+					reply.delete()
+					;
+				}, 60 * 1000);
+			});
 			msg.delete();
 		}
 	});
 });
 
 // subscribe the idea vault's events
+Wilson.on('channelUpdate', ideaVault.channelUpdate);
 Wilson.on('messageReactionAdd', ideaVault.messageReactionAdd);
-
 Wilson.on('messageReactionRemove', ideaVault.messageReactionRemove);
+Wilson.on('ready', ideaVault.ready);
 
 function createTranslateEmbed(msg, language) {
 	const embed = new MessageEmbed({

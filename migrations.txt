@@ -1,0 +1,5 @@
+
+// 02-Mar-2021 @tylermenezes
+ALTER TABLE ideas ADD tagged_channel varchar(25);
+ALTER TABLE ideas ADD message_channel varchar(25);
+ALTER TABLE ideas ADD airtable_updated BOOLEAN NOT NULL DEFAULT FALSE;
