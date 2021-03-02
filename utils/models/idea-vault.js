@@ -15,11 +15,24 @@ const ideas = db.define('ideas', {
 		type: Sequelize.STRING(25),
 		unique: true,
 	},
-	post: {
+}, { timestamps: false, charset: 'utf8mb4' });
+
+const posts = db.define('ideaposts', {
+	idea_id: {
+		type: Sequelize.INTEGER,
+		references: {
+			model: ideas,
+			key: 'id',
+		},
+	},
+	message: {
+		type: Sequelize.STRING(25),
+		unique: true,
+	},
+	channel: {
 		type: Sequelize.STRING(25),
 	},
-	post_channel: Sequelize.STRING(25),
-}, { timestamps: false, charset: 'utf8mb4' });
+})
 
 const guilds = db.define('ideaguilds', {
 	id: {
@@ -90,14 +103,20 @@ function removeTier(channel) {
 	});
 };
 
-function insertIdea(msg, post) {
+function insertIdea(msg) {
 	return ideas.create({
 		guild: msg.guild.id,
 		message: msg.id,
-		post: post.id,
-		post_channel: post.channel.id,
 	});
 };
+
+function insertPost(id, msg) {
+	return posts.create({
+		idea_id: id,
+		message: msg.id,
+		channel: msg.channel.id
+	})
+}
 
 function upsertComment(id, author, value) {
 	return comments.upsert({
@@ -134,16 +153,31 @@ function getIdeaByMsg(msg) {
 	});
 };
 
-function getIdeaByPost(msg) {
-	return ideas.findOne({
+async function getIdeaByPost(msg) {
+	const post = (await posts.findOne({
 		where: {
-			post: msg,
+			message: msg,
+		},
+	}));
+	if (!post) return;
+
+	return await ideas.findOne({
+		where: {
+			id: post.idea_id,
 		},
 	});
 };
 
 function getIdeaByID(id) {
 	return ideas.findOne({
+		where: {
+			id: id,
+		},
+	});
+};
+
+function getPostsByID(id) {
+	return posts.findAll({
 		where: {
 			id: id,
 		},
@@ -255,51 +289,51 @@ async function messageReactionAdd(reaction, user) {
 		return tiers.sort((a, b) => b.threshold - a.threshold).find(tier => reaction.count >= tier.threshold);
 	});
 	if (!tier) return;
-
 	const idea = await getIdeaByMsg(reaction.message.id);
 
-	if (!idea || idea.post === '0') {
-		// We reached the first tier, and this is a new or reserved idea
-		const post = await reaction.message.guild.channels.cache.get(tier.channel).send(
+	if (!idea) {
+		// A new idea that reached the first tier
+		const newPost = await reaction.message.guild.channels.cache.get(tier.channel).send(
 			{ embed: await generatePostEmbed('[loading]', reaction.message, reaction.count) },
 		);
-		// We don't know the ID until after inserting, and we can't insert without a post message
-		// This ternary expression handles if this is a reserved idea and we already have an id.
-		const id = !idea ? (await insertIdea(reaction.message, post)).id : idea.id;
 
-		// If this is a reserved idea update the post
-		if (idea) {
-			await ideas.upsert({
-				id: idea.id,
-				post: post.id,
-				post_channel: post.channel.id,
-			});
-		};
+		const id = (await insertIdea(reaction.message)).id;
+		await insertPost(id, newPost);
 
-		post.edit({ embed: await generatePostEmbed(id, reaction.message, reaction.count) });
+		// We don't know the ID until after inserting
+		newPost.edit({ embed: await generatePostEmbed(id, reaction.message, reaction.count) });
 	} else {
-		const post = await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
-		if (!post) return;
+		let posts = await getPostsByID(idea.id); // We overwrite this for the case of reserved ideas
+		if (!posts) {	
+			// This is a reserved idea that reached the first tier
+			posts = [await reaction.message.guild.channels.cache.get(tier.channel).send(
+				{ embed: await generatePostEmbed(idea.id, reaction.message, reaction.count) },
+			)];
+		}
 
-		post.embeds[0].setFooter(
-			`${reaction.count} | Idea #${idea.id}`,
-			'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/248/light-bulb_1f4a1.png',
-		);
+		for (const post in posts) {
+			// Update the embed count
+			const postMsg = await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
 
-		// We have reached a new tier, we need to move the message.
-		if (idea.post_channel !== tier.channel) {
-			const newPost = await reaction.message.guild.channels.cache.get(tier.channel).send({ embed: post.embeds[0] });
+			postMsg.embeds[0].setFooter(
+				`${reaction.count} | Idea #${idea.id}`,
+				'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/248/light-bulb_1f4a1.png',
+			);
 
-			await post.delete();
-
-			await ideas.upsert({
-				id: idea.id,
-				post: newPost.id,
-				post_channel: newPost.channel.id,
+			const isTier = await getTiers(reaction.message.guild.id).then(tiers => {
+				return tiers.find(element => element.channel == post.channel);
 			});
-		} else {
-			// We have not reached a new tier, we need to update the count.
-			await post.edit({ embed: post.embeds[0] });
+			if (isTier && isTier.channel != tier.channel) {
+				// We have reached a new tier
+				const newPost = await reaction.message.guild.channels.cache.get(tier.channel).send({ embed: post.embeds[0] });
+
+				await post.delete(); // Delete the old post
+
+				await insertPost(idea.id, newPost);
+			} else {
+				// Let's just update the count
+				await post.edit({ embed: post.embeds[0] });
+			};
 		};
 	};
 };
@@ -314,6 +348,10 @@ async function messageReactionRemove(reaction, user) {
 
 	const idea = await getIdeaByMsg(reaction.message.id);
 	if (!idea) return;
+
+	for (const post in await getPostsByID(idea.id)) {
+
+	}
 
 	const post = await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
 	if (!post) return;
