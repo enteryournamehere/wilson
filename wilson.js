@@ -45,7 +45,6 @@ Wilson.registry
 		['mod', 'Mod commands'],
 		['owner', 'Owner commands'],
 		['ideavault', 'Idea vault commands'],
-		// ['music', 'music commands'],
 	])
 	.registerDefaultTypes()
 	.registerDefaultGroups()
