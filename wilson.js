@@ -39,12 +39,12 @@ Wilson.setProvider(new SequelizeProvider(database.db)).catch(console.error);
 
 Wilson.registry
 	.registerGroups([
-		['fun', 'Fun commands'],
-		['search', 'Search commands'],
 		['config', 'Config commands'],
+		['fun', 'Fun commands'],
+		['ideavault', 'Idea vault commands'],
 		['mod', 'Mod commands'],
 		['owner', 'Owner commands'],
-		['ideavault', 'Idea vault commands'],
+		
 	])
 	.registerDefaultTypes()
 	.registerDefaultGroups()
