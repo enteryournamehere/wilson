@@ -5,14 +5,16 @@ const SequelizeProvider = require('./utils/Sequelize');
 const database = require('./database.js');
 const updates = require('./utils/models/updates.js');
 const ideaVault = require('./utils/models/idea-vault.js');
-const { MessageEmbed } = require('discord.js');
-const translation = require('./utils/translation.js');
 
 const updatesConfig = {
 	guild: secure.updateguild,
 	roles: secure.roles,
 	webhooks: secure.webhooks,
 };
+
+// Events
+const translation = require('./events/translation.js');
+
 
 const Wilson = new Commando.Client({
 	owner: secure.owners,
@@ -44,7 +46,7 @@ Wilson.registry
 		['ideavault', 'Idea vault commands'],
 		['mod', 'Mod commands'],
 		['owner', 'Owner commands'],
-		
+
 	])
 	.registerDefaultTypes()
 	.registerDefaultGroups()
@@ -118,8 +120,10 @@ Wilson.on('message', (msg) => {
 		const beenHereMinutes = (Date.now() - member.joinedTimestamp) / 1000 / 60;
 		if (beenHereMinutes < 10) {
 			msg.reply('welcome to the Wintergatan Discord server! To prevent spam and bots, there is a 10 minute wait time before new members can send links, so please try again in a moment. Thank you!').then(reply => {
-                setTimeout(() => {reply.delete()}, 60 * 1000);
-            });
+				setTimeout(() => {
+					reply.delete();
+				}, 60 * 1000);
+			});
 			msg.delete();
 		}
 	});
@@ -130,13 +134,6 @@ Wilson.on('messageReactionAdd', ideaVault.messageReactionAdd);
 
 Wilson.on('messageReactionRemove', ideaVault.messageReactionRemove);
 
-function createTranslateEmbed(msg, language) {
-	const embed = new MessageEmbed({
-		description: '[Original message](' + msg.url + ') ' + language,
-	});
-	embed.setColor(msg.member.displayColor || 16777215);
-	return embed;
-}
 
 /**
  * guild ids for role transfers
@@ -202,32 +199,7 @@ Wilson.on('guildMemberUpdate', (oldMember, newMember) => {
 	}
 });
 
-Wilson.on('message', async (msg) => {
-	if (msg.webhookID) return;
-	if (msg.channel.id !== secure.translation.from) return;
-	const toChannel = await msg.guild.channels.cache.get(secure.translation.to);
-	toChannel.fetchWebhooks().then(async webhooks => {
-		if (webhooks.first()) return webhooks.first();
-		else {
-			return await toChannel.createWebhook('Translation', {});
-		}
-	}).then(async (webhook) => {
-		if (!webhook) return console.error('No Translation Webhook');
-		const translated = await translation.translateText(msg.content);
-		const language = await translation.detectLanguage(msg.content);
-
-		const embed = createTranslateEmbed(msg, `(${translation.emoji(language[0][0].split('-')[0])} ${language[0][1]})`);
-		webhook.send(translated[0], {
-			username: msg.member.nickname ? `${msg.member.nickname} (${msg.author.username}#${msg.author.discriminator})` : `${`${msg.author.username}#${msg.author.discriminator}`}`,
-			avatarURL: msg.author.avatarURL(),
-			embeds: [embed, ...msg.embeds],
-			files: msg.attachments.array(),
-			allowedMentions: {
-				parse: [],
-			},
-		});
-	});
-});
+Wilson.on('message', translation);
 
 Wilson.on('message', async (msg) => {
 	if (!msg.author.bot && !msg.content && msg.channel.type == 'dm') Wilson.dmManager.newMessage(msg);
