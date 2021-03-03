@@ -33,7 +33,7 @@ async function upsertAirtableIdea({
 		[AIRTABLE_FIELDS.ORIGINAL_MESSAGE_LINK]: originalMessageLink,
 	};
 	const insertData = { // Data which will only be synchronized when first tracked
-    ...updateData,
+		...updateData,
 		[AIRTABLE_FIELDS.IDEA_NUMBER]: ideaNumber,
 		[AIRTABLE_FIELDS.ISSUE_CATEGORY]: initialIssueCategory,
 		[AIRTABLE_FIELDS.POST_IMAGES]: postImageUrls.map((url) => ({ url })), // Would need to track Airtable IDs to update
@@ -61,15 +61,15 @@ async function getCuratedIdeasForCategory({ issueCategory, onlyNew }) {
 		: '';
 
 	const filterByFormula = `AND(
-    ${issueCategoryFormula}
-    FIND("${AIRTABLE_CURATION_STATUS.CHOSEN_FOR_CURATION}", {${AIRTABLE_FIELDS.CURATION}}),
-    NOT(
-      OR(
-        FIND("${AIRTABLE_CURATION_STATUS.SENT_TO_MARTIN}", {${AIRTABLE_FIELDS.CURATION}}),
-        FIND("${AIRTABLE_CURATION_STATUS.CHOSEN_BY_MARTIN}", {${AIRTABLE_FIELDS.CURATION}})
-      )
-    )
-  )`;
+		${issueCategoryFormula}
+		FIND("${AIRTABLE_CURATION_STATUS.CHOSEN_FOR_CURATION}", {${AIRTABLE_FIELDS.CURATION}}),
+		NOT(
+			OR(
+				FIND("${AIRTABLE_CURATION_STATUS.SENT_TO_MARTIN}", {${AIRTABLE_FIELDS.CURATION}}),
+				FIND("${AIRTABLE_CURATION_STATUS.CHOSEN_BY_MARTIN}", {${AIRTABLE_FIELDS.CURATION}})
+			)
+		)
+	)`;
 
 	return fetchPages(table.select({ filterByFormula }));
 }
@@ -94,10 +94,10 @@ async function airtableGetIdeasAndCategories() {
 	}));
 
 	return result
-    .reduce((accum, { fields }) => ({
-      ...accum,
-      [fields[AIRTABLE_FIELDS.IDEA_NUMBER]]: fields[AIRTABLE_FIELDS.ISSUE_CATEGORY],
-    }), {});
+		.reduce((accum, { fields }) => ({
+			...accum,
+			[fields[AIRTABLE_FIELDS.IDEA_NUMBER]]: fields[AIRTABLE_FIELDS.ISSUE_CATEGORY],
+		}), {});
 }
 
 module.exports = {

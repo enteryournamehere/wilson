@@ -1,14 +1,14 @@
 async function fetchPages(request) {
-  const result = [];
+	const result = [];
 
-  await request.eachPage((records, nextPage) => {
-    records.forEach((rec) => result.push(rec));
-    nextPage();
-  });
+	await request.eachPage((records, nextPage) => {
+		records.forEach((rec) => result.push(rec));
+		nextPage();
+	});
 
-  return result;
+	return result;
 }
 
 module.exports = {
-  fetchPages,
+	fetchPages,
 };

@@ -168,8 +168,8 @@ roleMap.set('694608130629435432', '709469819874836541');    // john
 
 Wilson.on('guildMemberAdd', member => {
 	/**
-     * transfer roles from old server member to new server member
-     */
+		 * transfer roles from old server member to new server member
+		 */
 	if (member.guild.id != newGuildId) return;  // if join is not in new server, return
 	const oldMember = Wilson.guilds.resolve(oldGuildId).members.resolve(member.id);
 	if (!oldMember) return; // if user is not in old server, return

@@ -3,25 +3,25 @@
 //
 // Not all fields in the Airtable need to be tracked here, only those the bot edits.
 const AIRTABLE_FIELDS = {
-  IDEA_NUMBER: 'Idea #',
-  NUMBER_OF_BULBS: '# of bulbs',
-  ISSUE_CATEGORY: 'Issue Category',
-  POST_DATE_TIME: 'Post Date / Time (GMT)',
-  POSTED_BY: 'Posted By',
-  POST_TEXT: 'Post Text',
-  POST_IMAGES: 'Post Image(s)',
-  ORIGINAL_MESSAGE_LINK: 'Original Message Link',
-  CURATION_STATUS: 'Curation',
+	IDEA_NUMBER: 'Idea #',
+	NUMBER_OF_BULBS: '# of bulbs',
+	ISSUE_CATEGORY: 'Issue Category',
+	POST_DATE_TIME: 'Post Date / Time (GMT)',
+	POSTED_BY: 'Posted By',
+	POST_TEXT: 'Post Text',
+	POST_IMAGES: 'Post Image(s)',
+	ORIGINAL_MESSAGE_LINK: 'Original Message Link',
+	CURATION_STATUS: 'Curation',
 };
 
 // These will probably be static, but it's annoying to type the emoji each time.
 const AIRTABLE_CURATION_STATUS = {
-  CHOSEN_FOR_CURATION: '🥇 Chosen for Curation',
-  SENT_TO_MARTIN: '💌 Sent to Martin',
-  CHOSEN_BY_MARTIN: '🏆 Chosen by Martin',
+	CHOSEN_FOR_CURATION: '🥇 Chosen for Curation',
+	SENT_TO_MARTIN: '💌 Sent to Martin',
+	CHOSEN_BY_MARTIN: '🏆 Chosen by Martin',
 };
 
 module.exports = {
-  AIRTABLE_FIELDS,
-  AIRTABLE_CURATION_STATUS,
+	AIRTABLE_FIELDS,
+	AIRTABLE_CURATION_STATUS,
 };

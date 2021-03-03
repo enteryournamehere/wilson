@@ -24,17 +24,17 @@ const ideas = db.define('ideas', {
 		type: Sequelize.STRING(25),
 		unique: true,
 	},
-  message_channel: Sequelize.STRING(25),
+	message_channel: Sequelize.STRING(25),
 	post: {
 		type: Sequelize.STRING(25),
 	},
 	post_channel: Sequelize.STRING(25),
-  tagged_channel: Sequelize.STRING(25), // Defaults to the same as the post channel, but can be changed later
-  airtable_updated: {
-    type: Sequelize.BOOLEAN,
-    allowNull: false,
-    defaultValue: false
-  },
+	tagged_channel: Sequelize.STRING(25), // Defaults to the same as the post channel, but can be changed later
+	airtable_updated: {
+		type: Sequelize.BOOLEAN,
+		allowNull: false,
+		defaultValue: false
+	},
 }, { timestamps: false, charset: 'utf8mb4' });
 
 const guilds = db.define('ideaguilds', {
@@ -92,7 +92,7 @@ async function getTiers(guild) {
 
 async function getTierForBulbCount(guild, count) {
 	const tiers = await getTiers(guild);
-  return tiers.sort((a, b) => b.threshold - a.threshold).find((tier) => count >= tier.threshold);
+	return tiers.sort((a, b) => b.threshold - a.threshold).find((tier) => count >= tier.threshold);
 }
 
 function setTier(guild, channel, threshold) {
@@ -115,11 +115,11 @@ function insertIdea(msg, post) {
 	return ideas.create({
 		guild: msg.guild.id,
 		message: msg.id,
-    message_channel: msg.channel.id,
+		message_channel: msg.channel.id,
 		post: post.id,
 		post_channel: post.channel.id,
-    // Only idea vault categories are pre-tagged.
-    tagged_channel: msg.channel.parent.id === secure.ideaVaultCategory ? msg.channel.id : null,
+		// Only idea vault categories are pre-tagged.
+		tagged_channel: msg.channel.parent.id === secure.ideaVaultCategory ? msg.channel.id : null,
 	});
 };
 
@@ -150,41 +150,41 @@ function toggleCommentVisibility(id, author) {
 }
 
 async function findMessageChannelFromIdeaPost(idea) {
-  // Kind of a hack, this message will try to find the message link -> channel ID from the actual post content.
-  // (The only other option seems to be checking every channel, which is definitely a worse option.)
-  if (!idea.post_channel || idea.post_channel === RESERVED_IDEA_POST_ID) return null;
+	// Kind of a hack, this message will try to find the message link -> channel ID from the actual post content.
+	// (The only other option seems to be checking every channel, which is definitely a worse option.)
+	if (!idea.post_channel || idea.post_channel === RESERVED_IDEA_POST_ID) return null;
 
-  const post = await Wilson
-                  .guilds.cache.get(idea.guild)
-                  .channels.cache.get(idea.post_channel)
-                  .messages.fetch(idea.post);
+	const post = await Wilson
+									.guilds.cache.get(idea.guild)
+									.channels.cache.get(idea.post_channel)
+									.messages.fetch(idea.post);
 
-  const originalMessage = post.embeds[0].fields.filter((f) => f.name === 'Original message')[0]?.value || null;
-  if (!originalMessage) return null;
+	const originalMessage = post.embeds[0].fields.filter((f) => f.name === 'Original message')[0]?.value || null;
+	if (!originalMessage) return null;
 
-  return originalMessage.match(/discord.com\/channels\/\w+\/(\w+)\//)[1] || null;
+	return originalMessage.match(/discord.com\/channels\/\w+\/(\w+)\//)[1] || null;
 }
 
 async function backfillMissing(query, afterUpdate) {
-  const result = await query;
-  if (result && result.message) {
-    let discordRequest = false;
-    if (!result.message_channel) {
-      changes = true;
-      discordRequest = true;
-      console.log(`Looking for missing channel information for idea #${result.id}`);
-      // Try to find channel from Original Post link in embed
-      result.message_channel = await findMessageChannelFromIdeaPost(result);
+	const result = await query;
+	if (result && result.message) {
+		let discordRequest = false;
+		if (!result.message_channel) {
+			changes = true;
+			discordRequest = true;
+			console.log(`Looking for missing channel information for idea #${result.id}`);
+			// Try to find channel from Original Post link in embed
+			result.message_channel = await findMessageChannelFromIdeaPost(result);
 
-      // Fallback, search all channels.
-      if (!result.message_channel) result.message_channel = (await findMessageChannel(result.guild, result.message)).id;
+			// Fallback, search all channels.
+			if (!result.message_channel) result.message_channel = (await findMessageChannel(result.guild, result.message)).id;
 
-      result.tagged_channel = result.message_channel;
-      await result.save();
-      afterUpdate && await afterUpdate(result, discordRequest);
-    }
-  }
-  return result;
+			result.tagged_channel = result.message_channel;
+			await result.save();
+			afterUpdate && await afterUpdate(result, discordRequest);
+		}
+	}
+	return result;
 }
 
 async function getIdeaByMsg(msg) {
@@ -239,13 +239,13 @@ function isEnabled(guild) {
 };
 
 function generatePostEmbedFooterText(id, count, msg, tagged_channel) {
-  if (!tagged_channel) return `${count} | Idea #${id} | Uncategorized`;
+	if (!tagged_channel) return `${count} | Idea #${id} | Uncategorized`;
 
-  // Unfortunately we cannot do tags in embeds, so we have to look up the channel name.
-  const channelName = msg.guild
-                    .channels.cache.get(tagged_channel)
-                    .name;
-  return `${count} | Idea #${id} | #${channelName}`;
+	// Unfortunately we cannot do tags in embeds, so we have to look up the channel name.
+	const channelName = msg.guild
+										.channels.cache.get(tagged_channel)
+										.name;
+	return `${count} | Idea #${id} | #${channelName}`;
 }
 
 async function generatePostEmbed(id, msg, count, comments = [], tagged_channel) {
@@ -313,99 +313,99 @@ async function generatePostEmbed(id, msg, count, comments = [], tagged_channel) 
 
 const airtableSynchronizingPending = {}; // For retry logic, we will not retry currently pending updates.
 async function synchronizeAirtableIdea({ idea, msg, post }) {
-  if (!idea && post) idea = await getIdeaByPost(post.id);
-  if (!idea && msg) idea = await getIdeaByMsg(msg.id);
+	if (!idea && post) idea = await getIdeaByPost(post.id);
+	if (!idea && msg) idea = await getIdeaByMsg(msg.id);
 
-  if (idea.id in airtableSynchronizingPending && airtableSynchronizingPending[idea.id]) return;
-  airtableSynchronizingPending[idea.id] = true;
+	if (idea.id in airtableSynchronizingPending && airtableSynchronizingPending[idea.id]) return;
+	airtableSynchronizingPending[idea.id] = true;
 
-  if (!msg) msg = await Wilson
-                    .guilds.cache.get(idea.guild)
-                    .channels.cache.get(idea.message_channel)
-                    .messages.fetch(idea.message);
+	if (!msg) msg = await Wilson
+										.guilds.cache.get(idea.guild)
+										.channels.cache.get(idea.message_channel)
+										.messages.fetch(idea.message);
 
-  await upsertAirtableIdea({
-    ideaNumber: idea.id,
-    bulbCount: msg.reactions.cache.array().length,
-    postDateTime: msg.createdAt,
-    postedBy: msg.author.username,
-    postText: msg.content,
-    postImageUrls: msg.attachments.map((m) => m.url),
-    originalMessageLink: msg.url,
-    initialIssueCategory: msg.channel.parent.id === secure.ideaVaultCategory ? msg.channel.name : null,
-  });
+	await upsertAirtableIdea({
+		ideaNumber: idea.id,
+		bulbCount: msg.reactions.cache.array().length,
+		postDateTime: msg.createdAt,
+		postedBy: msg.author.username,
+		postText: msg.content,
+		postImageUrls: msg.attachments.map((m) => m.url),
+		originalMessageLink: msg.url,
+		initialIssueCategory: msg.channel.parent.id === secure.ideaVaultCategory ? msg.channel.name : null,
+	});
 
-  airtableSynchronizingPending[idea.id] = false;
+	airtableSynchronizingPending[idea.id] = false;
 
-  idea.airtable_updated = true;
-  await idea.save();
+	idea.airtable_updated = true;
+	await idea.save();
 }
 
 async function synchronizeAirtableIdeaWithRetry(args) {
-  try {
-    await synchronizeAirtableIdea(args);
-  } catch (err) {
-    console.error(`Retrying failed Airtable sync with error: ${err}`);
-    setTimeout(synchronizeAirtableIdeaWithRetry(args), AIRTABLE_RETRY_DELAY);
-  }
+	try {
+		await synchronizeAirtableIdea(args);
+	} catch (err) {
+		console.error(`Retrying failed Airtable sync with error: ${err}`);
+		setTimeout(synchronizeAirtableIdeaWithRetry(args), AIRTABLE_RETRY_DELAY);
+	}
 }
 
 async function refreshPosts({ idea, post, msg }) {
-  if (!idea && post) idea = await getIdeaByPost(post.id);
-  if (!idea && msg) idea = await getIdeaByMsg(msg.id);
+	if (!idea && post) idea = await getIdeaByPost(post.id);
+	if (!idea && msg) idea = await getIdeaByMsg(msg.id);
 
-  if (!msg) msg = await Wilson
-                    .guilds.cache.get(idea.guild)
-                    ?.channels.cache.get(idea.message_channel)
-                    ?.messages.fetch(idea.message);
-  if (!msg) return;
+	if (!msg) msg = await Wilson
+										.guilds.cache.get(idea.guild)
+										?.channels.cache.get(idea.message_channel)
+										?.messages.fetch(idea.message);
+	if (!msg) return;
 
-  if (!post) post = await Wilson
-                    .guilds.cache.get(idea.guild)
-                    ?.channels.cache.get(idea.post_channel)
-                    ?.messages.fetch(idea.post);
-  if (!post) return;
+	if (!post) post = await Wilson
+										.guilds.cache.get(idea.guild)
+										?.channels.cache.get(idea.post_channel)
+										?.messages.fetch(idea.post);
+	if (!post) return;
 
-  post.embeds[0].setFooter(
-    generatePostEmbedFooterText(idea.id, msg.reactions.cache.array().length, post, idea.tagged_channel),
-    IDEA_VOTE_EMOJI_IMAGE
-  );
-  await post.edit({ embed: post.embeds[0] });
+	post.embeds[0].setFooter(
+		generatePostEmbedFooterText(idea.id, msg.reactions.cache.array().length, post, idea.tagged_channel),
+		IDEA_VOTE_EMOJI_IMAGE
+	);
+	await post.edit({ embed: post.embeds[0] });
 }
 
 async function channelUpdate(oldChannel, newChannel) {
-  if (oldChannel.name === newChannel.name) return;
+	if (oldChannel.name === newChannel.name) return;
 
-  const existingIdeas = await ideas.findAll({ where: { tagged_channel: oldChannel.id } });
-  if (existingIdeas.length === 0) return;
+	const existingIdeas = await ideas.findAll({ where: { tagged_channel: oldChannel.id } });
+	if (existingIdeas.length === 0) return;
 
-  try {
-    await renameIssueCategory({ oldName: oldChannel.name, newName: newChannel.name });
-  } catch(err) {
-    await oldChannel.guild.channels.cache.get(secure.ideaVaultOrganizersChannel)
-      .send(
-        `An error occurred renaming ${oldChannel.name} to ${newChannel.name} on Airtable.`
-        + ` Someone will need to fix it manually.`
-      );
-  }
+	try {
+		await renameIssueCategory({ oldName: oldChannel.name, newName: newChannel.name });
+	} catch(err) {
+		await oldChannel.guild.channels.cache.get(secure.ideaVaultOrganizersChannel)
+			.send(
+				`An error occurred renaming ${oldChannel.name} to ${newChannel.name} on Airtable.`
+				+ ` Someone will need to fix it manually.`
+			);
+	}
 
-  await oldChannel.guild.channels.cache.get(secure.ideaVaultOrganizersChannel)
-      .send(`Channel rename! Can someone please remove "${oldChannel.name}" from the dropdown options in Airtable?`);
+	await oldChannel.guild.channels.cache.get(secure.ideaVaultOrganizersChannel)
+			.send(`Channel rename! Can someone please remove "${oldChannel.name}" from the dropdown options in Airtable?`);
 
-  // Slowly update all the existing posts on a background thread. We could do this faster, but it would constantly
-  // trigger rate limits, which would prevent the rest of the bot from working until it completes.
-  (async () => {
-    for (const idea of existingIdeas) {
-      await refreshPosts({ idea });
-      await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_SLOWDOWN_DELAY));
-    }
-  })();
+	// Slowly update all the existing posts on a background thread. We could do this faster, but it would constantly
+	// trigger rate limits, which would prevent the rest of the bot from working until it completes.
+	(async () => {
+		for (const idea of existingIdeas) {
+			await refreshPosts({ idea });
+			await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_SLOWDOWN_DELAY));
+		}
+	})();
 }
 
 async function updatePostTaggedChannel(idea, newChannel) {
-  idea.tagged_channel = newChannel?.id || null;
-  await idea.save();
-  refreshPosts({ idea });
+	idea.tagged_channel = newChannel?.id || null;
+	await idea.save();
+	refreshPosts({ idea });
 }
 
 async function messageReactionAdd(reaction, user) {
@@ -414,54 +414,54 @@ async function messageReactionAdd(reaction, user) {
 	await reaction.fetch();
 	if (!isEnabled(reaction.message.guild.id)) return;
 
-  // Only allow reactions to posts in the ideaVaultCategory channels. TODO: Make channel configurable per guild
+	// Only allow reactions to posts in the ideaVaultCategory channels. TODO: Make channel configurable per guild
 	if (!reaction.message.channel.parent || !(
-    reaction.message.channel.parent.id === secure.ideaVaultCategory
-    || secure.ideaVaultAdditionalChannels.includes(reaction.message.channel.id)
-  )) return;
+		reaction.message.channel.parent.id === secure.ideaVaultCategory
+		|| secure.ideaVaultAdditionalChannels.includes(reaction.message.channel.id)
+	)) return;
 
-  // If people are reacting to a post in the idea vault, instead of the original message, the reaction will not be
-  // tracked. TODO(@tylermenezes): it would be nice if we tracked these but deduped with original reactions. Looking
-  // through the idea vault, it appears people think this is how it works already. Would need to track all reaction
-  // authors in the DB for this to be efficient.
+	// If people are reacting to a post in the idea vault, instead of the original message, the reaction will not be
+	// tracked. TODO(@tylermenezes): it would be nice if we tracked these but deduped with original reactions. Looking
+	// through the idea vault, it appears people think this is how it works already. Would need to track all reaction
+	// authors in the DB for this to be efficient.
 	if (await getIdeaByPost(reaction.message.id)) return;
 
-  // TODO(@tylermenezes): once support for cross-posting to topic channels is added, we will need to check if they
-  // are reacting to a topic channel cross-post here
+	// TODO(@tylermenezes): once support for cross-posting to topic channels is added, we will need to check if they
+	// are reacting to a topic channel cross-post here
 
-  const tier = await getTierForBulbCount(reaction.message.guild.id, reaction.count);
+	const tier = await getTierForBulbCount(reaction.message.guild.id, reaction.count);
 	if (!tier) return;
 
-  let idea = await getIdeaByMsg(reaction.message.id);
-  const post = idea && idea.post !== RESERVED_IDEA_POST_ID
-    ? await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post)
-    : await reaction.message.guild.channels.cache.get(tier.channel).send(
+	let idea = await getIdeaByMsg(reaction.message.id);
+	const post = idea && idea.post !== RESERVED_IDEA_POST_ID
+		? await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post)
+		: await reaction.message.guild.channels.cache.get(tier.channel).send(
 			{ embed: await generatePostEmbed('[loading]', reaction.message, reaction.count, [], reaction.message.channel.id) },
 		);
 
-  if (!idea) idea = await insertIdea(reaction.message, post);
-  else if (idea.post === RESERVED_IDEA_POST_ID) { // Reserved idea, update post
-    idea.post = post.id;
-    idea.post_channel = post.channel.id;
-  };
+	if (!idea) idea = await insertIdea(reaction.message, post);
+	else if (idea.post === RESERVED_IDEA_POST_ID) { // Reserved idea, update post
+		idea.post = post.id;
+		idea.post_channel = post.channel.id;
+	};
 
-  idea.airtable_updated = false;
-  idea.save();
-  synchronizeAirtableIdeaWithRetry({ idea });
+	idea.airtable_updated = false;
+	idea.save();
+	synchronizeAirtableIdeaWithRetry({ idea });
 
-  if (idea.post_channel !== tier.channel) { // We have reached a new tier, we need to move the message.
-    const newPost = await reaction.message.guild.channels.cache.get(tier.channel).send({ embed: post.embeds[0] });
-    idea.post = newPost.id;
-    idea.post_channel = newPost.channel.id;
-    await idea.save();
-    await post.delete();
-  } else { // Edit reaction count
-    post.embeds[0].setFooter(
-      generatePostEmbedFooterText(idea.id, reaction.count, post, idea.tagged_channel),
-      IDEA_VOTE_EMOJI_IMAGE
-    );
+	if (idea.post_channel !== tier.channel) { // We have reached a new tier, we need to move the message.
+		const newPost = await reaction.message.guild.channels.cache.get(tier.channel).send({ embed: post.embeds[0] });
+		idea.post = newPost.id;
+		idea.post_channel = newPost.channel.id;
+		await idea.save();
+		await post.delete();
+	} else { // Edit reaction count
+		post.embeds[0].setFooter(
+			generatePostEmbedFooterText(idea.id, reaction.count, post, idea.tagged_channel),
+			IDEA_VOTE_EMOJI_IMAGE
+		);
 		await post.edit({ embed: post.embeds[0] });
-  }
+	}
 };
 
 async function messageReactionRemove(reaction, user) {
@@ -471,9 +471,9 @@ async function messageReactionRemove(reaction, user) {
 	if (!isEnabled(reaction.message.guild.id)) return;
 	// TODO: Make channel configurable per guild
 	if (!reaction.message.channel.parent || !(
-    reaction.message.channel.parent.id === secure.ideaVaultCategory
-    || secure.ideaVaultAdditionalChannels.includes(reaction.message.channel.id)
-  )) return;
+		reaction.message.channel.parent.id === secure.ideaVaultCategory
+		|| secure.ideaVaultAdditionalChannels.includes(reaction.message.channel.id)
+	)) return;
 
 	const idea = await getIdeaByMsg(reaction.message.id);
 	if (!idea) return;
@@ -481,25 +481,25 @@ async function messageReactionRemove(reaction, user) {
 	const post = await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
 	if (!post) return;
 
-  idea.airtable_updated = false;
-  idea.save();
-  synchronizeAirtableIdeaWithRetry({ idea });
-  post.embeds[0].setFooter(
-    generatePostEmbedFooterText(idea.id, reaction.count, post, idea.tagged_channel),
-    IDEA_VOTE_EMOJI_IMAGE
-  );
+	idea.airtable_updated = false;
+	idea.save();
+	synchronizeAirtableIdeaWithRetry({ idea });
+	post.embeds[0].setFooter(
+		generatePostEmbedFooterText(idea.id, reaction.count, post, idea.tagged_channel),
+		IDEA_VOTE_EMOJI_IMAGE
+	);
 
-  const tier = await getTierForBulbCount(reaction.message.guild.id, reaction.count);
+	const tier = await getTierForBulbCount(reaction.message.guild.id, reaction.count);
 	if (!tier) { // Idea has fallen off the tiers and the post will be removed, but the Idea # will be "reserved".
-    idea.post = RESERVED_IDEA_POST_ID;
-    idea.post_channel = RESERVED_IDEA_POST_ID;
-    idea.save();
+		idea.post = RESERVED_IDEA_POST_ID;
+		idea.post_channel = RESERVED_IDEA_POST_ID;
+		idea.save();
 		await post.delete();
 	} else if (idea.post_channel !== tier.channel) { // Idea moves down a tier.
 		const newPost = await reaction.message.guild.channels.cache.get(tier.channel).send({ embed: post.embeds[0] });
-    ideas.post = newPost.id;
-    ideas.post_channel = newPost.channel.id;
-    await ideas.save();
+		ideas.post = newPost.id;
+		ideas.post_channel = newPost.channel.id;
+		await ideas.save();
 		await post.delete();
 	} else { // Update reaction count.
 		await post.edit({ embed: post.embeds[0] });
@@ -507,36 +507,36 @@ async function messageReactionRemove(reaction, user) {
 };
 
 async function ready() {
-  const airtableSync = async () => {
-    console.log('Beginning Airtable sync');
-    const airtableTruth = await airtableGetIdeasAndCategories();
-    const serverTruth = await ideas.findAll();
+	const airtableSync = async () => {
+		console.log('Beginning Airtable sync');
+		const airtableTruth = await airtableGetIdeasAndCategories();
+		const serverTruth = await ideas.findAll();
 
-    for (const maybeIdea of serverTruth) {
-      // Historical posts will be missing channel information which needs to be fetched.
-      const idea = await backfillMissing(maybeIdea, async (result) => {
-        await refreshPosts({ idea: result });
-        await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_SLOWDOWN_DELAY));
-      });
+		for (const maybeIdea of serverTruth) {
+			// Historical posts will be missing channel information which needs to be fetched.
+			const idea = await backfillMissing(maybeIdea, async (result) => {
+				await refreshPosts({ idea: result });
+				await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_SLOWDOWN_DELAY));
+			});
 
-      // Check if the DB has information which needs to be saved to Airtable.
-      if (!(idea.id in airtableTruth) || !idea.airtable_updated) {
-        await synchronizeAirtableIdea({ idea });
-      } else {
-        // Check if the Airtable channel ID has changed
-        const airtableChannelName = airtableTruth[idea.id];
-        const airtableChannel = Wilson.guilds.cache.get(idea.guild).channels.cache.find((ch) => ch.name == airtableChannelName);
-        if ((!airtableChannel && idea.tagged_channel) || (airtableChannel && airtableChannel.id !== idea.tagged_channel)) {
-          await updatePostTaggedChannel(idea, airtableChannel);
-        }
-      }
-    }
+			// Check if the DB has information which needs to be saved to Airtable.
+			if (!(idea.id in airtableTruth) || !idea.airtable_updated) {
+				await synchronizeAirtableIdea({ idea });
+			} else {
+				// Check if the Airtable channel ID has changed
+				const airtableChannelName = airtableTruth[idea.id];
+				const airtableChannel = Wilson.guilds.cache.get(idea.guild).channels.cache.find((ch) => ch.name == airtableChannelName);
+				if ((!airtableChannel && idea.tagged_channel) || (airtableChannel && airtableChannel.id !== idea.tagged_channel)) {
+					await updatePostTaggedChannel(idea, airtableChannel);
+				}
+			}
+		}
 
-    console.log('Sync done');
-    setTimeout(airtableSync, AIRTABLE_SYNC_CATEGORIES_INTERVAL);
-  };
+		console.log('Sync done');
+		setTimeout(airtableSync, AIRTABLE_SYNC_CATEGORIES_INTERVAL);
+	};
 
-  airtableSync(); // Start sync.
+	airtableSync(); // Start sync.
 }
 
 module.exports = {
@@ -551,9 +551,9 @@ module.exports = {
 	enable,
 	disable,
 	isEnabled,
-  ready,
-  updatePostTaggedChannel,
-  channelUpdate,
+	ready,
+	updatePostTaggedChannel,
+	channelUpdate,
 	messageReactionAdd,
 	messageReactionRemove,
 };
