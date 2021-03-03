@@ -8,6 +8,7 @@ const AIRTABLE_FIELDS = {
 	ISSUE_CATEGORY: 'Issue Category',
 	POST_DATE_TIME: 'Post Date / Time (GMT)',
 	POSTED_BY: 'Posted By',
+	POSTED_BY_TAG: 'Posted By Tag',
 	POST_TEXT: 'Post Text',
 	POST_IMAGES: 'Post Image(s)',
 	ORIGINAL_MESSAGE_LINK: 'Original Message Link',

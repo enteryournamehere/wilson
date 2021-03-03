@@ -329,6 +329,7 @@ async function synchronizeAirtableIdea({ idea, msg, post }) {
 		bulbCount: msg.reactions.cache.array().length,
 		postDateTime: msg.createdAt,
 		postedBy: msg.author.username,
+    postedById: msg.author.id,
 		postText: msg.content,
 		postImageUrls: msg.attachments.map((m) => m.url),
 		originalMessageLink: msg.url,

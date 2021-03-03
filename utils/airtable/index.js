@@ -20,6 +20,7 @@ async function upsertAirtableIdea({
 	bulbCount,
 	postDateTime,
 	postedBy,
+  postedById,
 	postText,
 	postImageUrls,
 	originalMessageLink,
@@ -29,6 +30,7 @@ async function upsertAirtableIdea({
 		[AIRTABLE_FIELDS.NUMBER_OF_BULBS]: bulbCount,
 		[AIRTABLE_FIELDS.POST_DATE_TIME]: postDateTime.toISOString(),
 		[AIRTABLE_FIELDS.POSTED_BY]: postedBy,
+    [AIRTABLE_FIELDS.POSTED_BY_TAG]: `<@${postedById}>`,
 		[AIRTABLE_FIELDS.POST_TEXT]: postText,
 		[AIRTABLE_FIELDS.ORIGINAL_MESSAGE_LINK]: originalMessageLink,
 	};
