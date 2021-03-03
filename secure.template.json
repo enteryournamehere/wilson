@@ -48,7 +48,9 @@
         "instagram": false
     },
     "guildsToBridge": [],
-    "ideaVaultCategory": "channel id",
+    "ideaVaultCategory": "category id",
+    "ideaVaultAdditionalChannels": [],
     "ideaVaultCommentRoles": [],
-    "updateguild": "where updates should be sent"
+    "updateguild": "where updates should be sent",
+    "ideaVaultOrganizersChannel": "channel id"
 }
