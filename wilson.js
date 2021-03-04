@@ -59,7 +59,7 @@ Wilson.registry
 
 function twitter2Fetch() {
 	Wilson.fetches.twitter.last = Date.now();
-	require('./twitter2.js').fetch().then((x) => {
+	require('./utils/twitter2.js').fetch().then((x) => {
 		if (!x.new) return;
 		twitterWebhook.send(`<@&${updatesConfig.roles.twitter}>`, x.embed).catch(() => { }).then(() => {
 			updates.addUpdate(
@@ -76,7 +76,7 @@ function twitter2Fetch() {
 
 function youtube2Fetch() {
 	Wilson.fetches.youtube.last = Date.now();
-	require('./youtube2.js').fetch().then((x) => {
+	require('./utils/youtube2.js').fetch().then((x) => {
 		if (!x.new) return;
 		youtubeWebhook.send(`<@&${updatesConfig.roles.youtube}>`, x.embed).catch(() => { }).then(() => {
 			updates.addUpdate(
