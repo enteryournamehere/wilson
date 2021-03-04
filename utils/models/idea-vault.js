@@ -149,6 +149,11 @@ function toggleCommentVisibility(id, author) {
 	})
 }
 
+async function getReactionCount(message, refresh) {
+  const updatedMessage = refresh ? await message.channel.messages.fetch(message.id) : message;
+  return updatedMessage.reactions.cache.filter(a => a.emoji.name == IDEA_VOTE_EMOJI).map(reaction => reaction.count)[0] || 0;
+}
+
 async function findMessageChannelFromIdeaPost(idea) {
 	// Kind of a hack, this message will try to find the message link -> channel ID from the actual post content.
 	// (The only other option seems to be checking every channel, which is definitely a worse option.)
@@ -312,7 +317,7 @@ async function generatePostEmbed(id, msg, count, comments = [], tagged_channel) 
 };
 
 const airtableSynchronizingPending = {}; // For retry logic, we will not retry currently pending updates.
-async function synchronizeAirtableIdea({ idea, msg, post }) {
+async function synchronizeAirtableIdea({ idea, msg, post, reactionCount }) {
 	if (!idea && post) idea = await getIdeaByPost(post.id);
 	if (!idea && msg) idea = await getIdeaByMsg(msg.id);
 
@@ -326,12 +331,12 @@ async function synchronizeAirtableIdea({ idea, msg, post }) {
 
 	await upsertAirtableIdea({
 		ideaNumber: idea.id,
-		bulbCount: msg.reactions.cache.array().length,
+		bulbCount: reactionCount || getReactionCount(msg),
 		postDateTime: msg.createdAt,
-		postedBy: msg.author.username,
-    postedById: msg.author.id,
+		postedBy: msg.author?.username,
+    postedById: msg.author?.id,
 		postText: msg.content,
-		postImageUrls: msg.attachments.map((m) => m.url),
+		postImageUrls: msg.attachments?.map((m) => m.url),
 		originalMessageLink: msg.url,
 		initialIssueCategory: msg.channel.parent.id === secure.ideaVaultCategory ? msg.channel.name : null,
 	});
@@ -347,7 +352,7 @@ async function synchronizeAirtableIdeaWithRetry(args) {
 		await synchronizeAirtableIdea(args);
 	} catch (err) {
 		console.error(`Retrying failed Airtable sync with error: ${err}`);
-		setTimeout(synchronizeAirtableIdeaWithRetry(args), AIRTABLE_RETRY_DELAY);
+		setTimeout(() => synchronizeAirtableIdeaWithRetry(args), AIRTABLE_RETRY_DELAY);
 	}
 }
 
@@ -368,7 +373,7 @@ async function refreshPosts({ idea, post, msg }) {
 	if (!post) return;
 
 	post.embeds[0].setFooter(
-		generatePostEmbedFooterText(idea.id, msg.reactions.cache.array().length, post, idea.tagged_channel),
+		generatePostEmbedFooterText(idea.id, getReactionCount(msg), post, idea.tagged_channel),
 		IDEA_VOTE_EMOJI_IMAGE
 	);
 	await post.edit({ embed: post.embeds[0] });
@@ -413,6 +418,7 @@ async function messageReactionAdd(reaction, user) {
 	if (reaction.emoji.name !== IDEA_VOTE_EMOJI) return;
 
 	await reaction.fetch();
+  const reactionCount = await getReactionCount(reaction.message, true);
 	if (!isEnabled(reaction.message.guild.id)) return;
 
 	// Only allow reactions to posts in the ideaVaultCategory channels. TODO: Make channel configurable per guild
@@ -430,14 +436,14 @@ async function messageReactionAdd(reaction, user) {
 	// TODO(@tylermenezes): once support for cross-posting to topic channels is added, we will need to check if they
 	// are reacting to a topic channel cross-post here
 
-	const tier = await getTierForBulbCount(reaction.message.guild.id, reaction.count);
+	const tier = await getTierForBulbCount(reaction.message.guild.id, reactionCount);
 	if (!tier) return;
 
 	let idea = await getIdeaByMsg(reaction.message.id);
 	const post = idea && idea.post !== RESERVED_IDEA_POST_ID
 		? await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post)
 		: await reaction.message.guild.channels.cache.get(tier.channel).send(
-			{ embed: await generatePostEmbed('[loading]', reaction.message, reaction.count, [], reaction.message.channel.id) },
+			{ embed: await generatePostEmbed('[loading]', reaction.message, reactionCount, [], reaction.message.channel.id) },
 		);
 
 	if (!idea) idea = await insertIdea(reaction.message, post);
@@ -447,8 +453,12 @@ async function messageReactionAdd(reaction, user) {
 	};
 
 	idea.airtable_updated = false;
-	idea.save();
-	synchronizeAirtableIdeaWithRetry({ idea });
+	await idea.save();
+	synchronizeAirtableIdeaWithRetry({ idea, msg: reaction.message, post, reactionCount: reactionCount });
+  post.embeds[0].setFooter(
+    generatePostEmbedFooterText(idea.id, reactionCount, post, idea.tagged_channel),
+    IDEA_VOTE_EMOJI_IMAGE
+  );
 
 	if (idea.post_channel !== tier.channel) { // We have reached a new tier, we need to move the message.
 		const newPost = await reaction.message.guild.channels.cache.get(tier.channel).send({ embed: post.embeds[0] });
@@ -457,10 +467,6 @@ async function messageReactionAdd(reaction, user) {
 		await idea.save();
 		await post.delete();
 	} else { // Edit reaction count
-		post.embeds[0].setFooter(
-			generatePostEmbedFooterText(idea.id, reaction.count, post, idea.tagged_channel),
-			IDEA_VOTE_EMOJI_IMAGE
-		);
 		await post.edit({ embed: post.embeds[0] });
 	}
 };
@@ -469,6 +475,7 @@ async function messageReactionRemove(reaction, user) {
 	if (reaction.emoji.name !== IDEA_VOTE_EMOJI) return;
 
 	await reaction.fetch();
+  const reactionCount = await getReactionCount(reaction.message, true);
 	if (!isEnabled(reaction.message.guild.id)) return;
 	// TODO: Make channel configurable per guild
 	if (!reaction.message.channel.parent || !(
@@ -483,14 +490,14 @@ async function messageReactionRemove(reaction, user) {
 	if (!post) return;
 
 	idea.airtable_updated = false;
-	idea.save();
-	synchronizeAirtableIdeaWithRetry({ idea });
+	await idea.save();
+	synchronizeAirtableIdeaWithRetry({ idea, msg: reaction.message, post, reactionCount: reactionCount });
 	post.embeds[0].setFooter(
-		generatePostEmbedFooterText(idea.id, reaction.count, post, idea.tagged_channel),
+		generatePostEmbedFooterText(idea.id, reactionCount, post, idea.tagged_channel),
 		IDEA_VOTE_EMOJI_IMAGE
 	);
 
-	const tier = await getTierForBulbCount(reaction.message.guild.id, reaction.count);
+	const tier = await getTierForBulbCount(reaction.message.guild.id, reactionCount);
 	if (!tier) { // Idea has fallen off the tiers and the post will be removed, but the Idea # will be "reserved".
 		idea.post = RESERVED_IDEA_POST_ID;
 		idea.post_channel = RESERVED_IDEA_POST_ID;
@@ -498,14 +505,36 @@ async function messageReactionRemove(reaction, user) {
 		await post.delete();
 	} else if (idea.post_channel !== tier.channel) { // Idea moves down a tier.
 		const newPost = await reaction.message.guild.channels.cache.get(tier.channel).send({ embed: post.embeds[0] });
-		ideas.post = newPost.id;
-		ideas.post_channel = newPost.channel.id;
-		await ideas.save();
+		idea.post = newPost.id;
+		idea.post_channel = newPost.channel.id;
+		await idea.save();
 		await post.delete();
 	} else { // Update reaction count.
 		await post.edit({ embed: post.embeds[0] });
 	};
-};
+}
+
+async function messageUpdate(oldMessage, message) {
+	if (!isEnabled(message.guild.id)) return;
+	// TODO: Make channel configurable per guild
+	if (!message.channel.parent || !(
+		message.channel.parent.id === secure.ideaVaultCategory
+		|| secure.ideaVaultAdditionalChannels.includes(message.channel.id)
+	)) return;
+
+	const idea = await getIdeaByMsg(message.id);
+	if (!idea) return;
+
+	const post = await message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
+	if (!post) return;
+
+	idea.airtable_updated = false;
+	await idea.save();
+	synchronizeAirtableIdeaWithRetry({ idea, msg: message, post });
+
+  post.embeds[0].description = message.content;
+  await post.edit({ embed: post.embeds[0] });
+}
 
 async function ready() {
 	const airtableSync = async () => {
@@ -557,4 +586,5 @@ module.exports = {
 	channelUpdate,
 	messageReactionAdd,
 	messageReactionRemove,
+  messageUpdate,
 };

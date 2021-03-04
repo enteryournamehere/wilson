@@ -123,6 +123,7 @@ Wilson.on('message', (msg) => {
 Wilson.on('channelUpdate', ideaVault.channelUpdate);
 Wilson.on('messageReactionAdd', ideaVault.messageReactionAdd);
 Wilson.on('messageReactionRemove', ideaVault.messageReactionRemove);
+Wilson.on('messageUpdate', ideaVault.messageUpdate);
 Wilson.on('ready', ideaVault.ready);
 
 function createTranslateEmbed(msg, language) {
