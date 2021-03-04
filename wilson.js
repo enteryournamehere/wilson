@@ -102,8 +102,6 @@ Wilson.fetches = {
 };
 
 Wilson.on('ready', () => {
-	Wilson.dmManager = new (require('./utils/classes/DmManager.js'))(Wilson);
-
 	console.log(`{green}Ready!`);
 });
 
@@ -200,14 +198,6 @@ Wilson.on('guildMemberUpdate', (oldMember, newMember) => {
 });
 
 Wilson.on('message', translation);
-
-Wilson.on('message', async (msg) => {
-	if (!msg.author.bot && !msg.content && msg.channel.type == 'dm') Wilson.dmManager.newMessage(msg);
-});
-
-Wilson.on('unknownCommand', (msg) => {
-	if (!msg.author.bot && msg.channel.type == 'dm') Wilson.dmManager.newMessage(msg);
-});
 
 Wilson.on('error', (msg) => {
 	console.log('{red}Error!{reset}', msg);
