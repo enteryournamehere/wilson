@@ -1,5 +1,5 @@
 const Sequelize = require('sequelize');
-const secure = require('./secure.json');
+const secure = require('../secure.json');
 
 class WilsonDatabase {
 	constructor() {

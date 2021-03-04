@@ -1,6 +1,6 @@
 /* eslint-disable new-cap */
 const Sequelize = require('sequelize');
-const { db } = require('../../database.js');
+const { db } = require('../../utils/database.js');
 const secure = require('../../secure.json');
 const { MessageEmbed } = require('discord.js');
 
