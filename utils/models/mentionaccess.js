@@ -1,6 +1,5 @@
 const Sequelize = require('sequelize');
 const Database = require('../../database.js');
-const Op = Sequelize.Op;
 
 const db = Database.db;
 
@@ -59,15 +58,5 @@ module.exports = {
 			found = found.map(x => x.dataValues);
 			return found;
 		});
-	}
-	/*
-		getmentionaccess: async function() {
-			return mentionaccess.findAll({
-				where: {
-					sub: true,
-				},
-			}).then(x => {
-				return x.map(f => f.dataValues.role);
-			});
-		},*/
+	},
 };

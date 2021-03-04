@@ -1,6 +1,5 @@
 const Sequelize = require('sequelize');
 const Database = require('../../database.js');
-const Op = Sequelize.Op;
 
 const db = Database.db;
 
@@ -28,7 +27,7 @@ module.exports = {
 			postid: postid,
 			time: time,
 		}).catch((n) => {
-			console.log(n)
+			console.log(n);
 		});
 	},
 
@@ -45,14 +44,4 @@ module.exports = {
 			return found[0] || {type: type, postid: undefined, time: 0};
 		});
 	},
-/*
-	getupdates: async function() {
-		return updates.findAll({
-			where: {
-				sub: true,
-			},
-		}).then(x => {
-			return x.map(f => f.dataValues.role);
-		});
-	},*/
 };
