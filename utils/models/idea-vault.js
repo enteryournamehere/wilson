@@ -1,6 +1,6 @@
 /* eslint-disable new-cap */
 const Sequelize = require('sequelize');
-const { db } = require('../../database.js');
+const { db } = require('../database.js');
 const { upsertAirtableIdea, renameIssueCategory, airtableGetIdeasAndCategories } = require('../airtable');
 const { Wilson, findMessageChannel } = require('../wilson');
 const secure = require('../../secure.json');
@@ -250,7 +250,7 @@ function generatePostEmbedFooterText(id, count, msg, tagged_channel) {
 	const channelName = msg.guild
 										.channels.cache.get(tagged_channel)
 										.name;
-	return `${count} | Idea #${id} | #${channelName}`;
+	return `${count} | Idea #${id} | Category: ${channelName}`;
 }
 
 async function generatePostEmbed(id, msg, count, comments = [], tagged_channel) {
@@ -331,7 +331,7 @@ async function synchronizeAirtableIdea({ idea, msg, post, reactionCount }) {
 
 	await upsertAirtableIdea({
 		ideaNumber: idea.id,
-		bulbCount: reactionCount || getReactionCount(msg),
+		bulbCount: reactionCount || await getReactionCount(msg),
 		postDateTime: msg.createdAt,
 		postedBy: msg.author?.username,
     postedById: msg.author?.id,
@@ -373,7 +373,7 @@ async function refreshPosts({ idea, post, msg }) {
 	if (!post) return;
 
 	post.embeds[0].setFooter(
-		generatePostEmbedFooterText(idea.id, getReactionCount(msg), post, idea.tagged_channel),
+		generatePostEmbedFooterText(idea.id, await getReactionCount(msg), post, idea.tagged_channel),
 		IDEA_VOTE_EMOJI_IMAGE
 	);
 	await post.edit({ embed: post.embeds[0] });
@@ -396,7 +396,11 @@ async function channelUpdate(oldChannel, newChannel) {
 	}
 
 	await oldChannel.guild.channels.cache.get(secure.ideaVaultOrganizersChannel)
-			.send(`Channel rename! Can someone please remove "${oldChannel.name}" from the dropdown options in Airtable?`);
+			.send(
+        `\`${oldChannel.name}\` was renamed to <#${newChannel.id}>. I updated the Airtable entries, but I am not able`
+        + ` to remove \`${oldChannel.name}\` from the "Issue Category" drop-down options.\nCan someone please`
+        + ` **remove \`${oldChannel.name}\` from the "Issue Category" dropdown options in Airtable?**`
+      );
 
 	// Slowly update all the existing posts on a background thread. We could do this faster, but it would constantly
 	// trigger rate limits, which would prevent the rest of the bot from working until it completes.
@@ -556,7 +560,10 @@ async function ready() {
 				// Check if the Airtable channel ID has changed
 				const airtableChannelName = airtableTruth[idea.id];
 				const airtableChannel = Wilson.guilds.cache.get(idea.guild).channels.cache.find((ch) => ch.name == airtableChannelName);
-				if ((!airtableChannel && idea.tagged_channel) || (airtableChannel && airtableChannel.id !== idea.tagged_channel)) {
+        if (airtableChannelName && !airtableChannel) {
+          console.error(`Airtable had invalid channel name ${airtableChannelName} for idea #${idea.id}.`);
+          if (idea.tagged_channel) await updatePostTaggedChannel(idea, airtableChannel);
+        } else if (!airtableChannelName || (airtableChannel?.id !== idea.tagged_channel)) {
 					await updatePostTaggedChannel(idea, airtableChannel);
 				}
 			}

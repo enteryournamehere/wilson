@@ -41,20 +41,23 @@ async function upsertAirtableIdea({
 		[AIRTABLE_FIELDS.POST_IMAGES]: postImageUrls.map((url) => ({ url })), // Would need to track Airtable IDs to update
 	};
 
-	// no support for upsert in airtable, so we first do a lookup to see if the record exists:
-	const existingRecords = await fetchPages(table.select({
-		maxRecords: 1,
-		fields: [],
-		filterByFormula: `{${AIRTABLE_FIELDS.IDEA_NUMBER}} = "${ideaNumber}"`,
-	}));
-	if (existingRecords.length > 0) {
-		await table.update([{
-			id: existingRecords[0].getId(),
-			fields: updateData,
-		}], { typecast: true });
-	} else {
-		await table.create([{ fields: insertData }], { typecast: true });
-	}
+  // no support for upsert in airtable, so we first do a lookup to see if the record exists:
+  const existingRecords = await fetchPages(table.select({
+    maxRecords: 1,
+    fields: [],
+    filterByFormula: `{${AIRTABLE_FIELDS.IDEA_NUMBER}} = "${ideaNumber}"`,
+  }));
+
+  await new Promise((resolve, reject) => {
+    if (existingRecords.length > 0) {
+      table.update([{
+        id: existingRecords[0].getId(),
+        fields: updateData,
+      }], { typecast: true }, (err, res) => err ? reject(JSON.stringify(err)) : resolve(res));
+    } else {
+      table.create([{ fields: insertData }], { typecast: true }, (err, res) => err ? reject(JSON.stringify(err)) : resolve(res));
+    }
+  })
 }
 
 async function getCuratedIdeasForCategory({ issueCategory, onlyNew }) {

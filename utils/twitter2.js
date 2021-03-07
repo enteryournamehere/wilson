@@ -1,6 +1,6 @@
 const Twitter = require('twitter');
-const secure = require('./secure.json');
-const updates = require('./utils/models/updates.js');
+const secure = require('../secure.json');
+const updates = require('./models/updates.js');
 
 const client = new Twitter({
 	consumer_key: secure.twitter.consumer_key,
