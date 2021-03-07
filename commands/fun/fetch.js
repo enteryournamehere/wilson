@@ -28,7 +28,7 @@ module.exports = class FetchCommand extends commando.Command {
 
 	async run(msg, {type}) {
 		if (type === 't') {
-			require('../../twitter2.js').fetch().then((x) => {
+			require('../../utils/twitter2.js').fetch().then((x) => {
 				msg.say('Here\'s the latest tweet. New: ' + x.new, {
 					embed: x.embed,
 				});
@@ -42,7 +42,7 @@ module.exports = class FetchCommand extends commando.Command {
 			});
 		}
 		if (type === 'y') {
-			require('../../youtube2.js').fetch().then((x) => {
+			require('../../utils/youtube2.js').fetch().then((x) => {
 				msg.say('Here\'s the latest video. New: ' + x.new, {
 					embed: x.embed,
 				});
@@ -55,20 +55,5 @@ module.exports = class FetchCommand extends commando.Command {
 				}
 			});
 		}
-		/* if (type === 'i') {
-			require('../../instagram2.js').fetch().then((x) => {
-				if (!x) return msg.say('No new posts found.');
-				msg.say('Here\'s the latest post. New: ' + x.new, {
-					embed: x.embed,
-				});
-				if (x.new) {
-					updates.addUpdate(
-						'instagram',
-						x.postid,
-						x.time,
-					);
-				}
-			});
-		}*/
 	}
 };

@@ -2,17 +2,9 @@ const secure = require('./secure.json');
 const Commando = require('discord.js-commando');
 const path = require('path');
 const SequelizeProvider = require('./utils/Sequelize');
-const database = require('./database.js');
+const database = require('./utils/database.js');
 const updates = require('./utils/models/updates.js');
-const ideaVault = require('./utils/models/idea-vault.js');
-const { MessageEmbed } = require('discord.js');
-const translation = require('./utils/translation.js');
 
-const updatesConfig = {
-	guild: secure.updateguild,
-	roles: secure.roles,
-	webhooks: secure.webhooks,
-};
 
 const Wilson = new Commando.Client({
 	owner: secure.owners,
@@ -24,28 +16,13 @@ const Wilson = new Commando.Client({
 	partials: ['MESSAGE', 'REACTION'],
 });
 
-Wilson.dispatcher.addInhibitor(msg => {
-	if (msg.webhookID) return 'nope';
-	return false;
-});
-
-const Webhook = require('./webhook.js');
-const twitterWebhook = new Webhook(updatesConfig.webhooks.twitter);
-const youtubeWebhook = new Webhook(updatesConfig.webhooks.youtube);
-
-database.start();
-
-Wilson.setProvider(new SequelizeProvider(database.db)).catch(console.error);
-
 Wilson.registry
 	.registerGroups([
-		['fun', 'Fun commands'],
-		['search', 'Search commands'],
 		['config', 'Config commands'],
+		['fun', 'Fun commands'],
+		['ideavault', 'Idea vault commands'],
 		['mod', 'Mod commands'],
 		['owner', 'Owner commands'],
-		['ideavault', 'Idea vault commands'],
-		// ['music', 'music commands'],
 	])
 	.registerDefaultTypes()
 	.registerDefaultGroups()
@@ -56,9 +33,130 @@ Wilson.registry
 	})
 	.registerCommandsIn(path.join(__dirname, 'commands'));
 
+
+Wilson.on('ready', () => {
+	console.log(`{green}Ready!`);
+});
+
+Wilson.on('error', (msg) => {
+	console.log('{red}Error!{reset}', msg);
+});
+
+database.start();
+
+Wilson.setProvider(new SequelizeProvider(database.db)).catch(console.error);
+
+
+// Events
+const translation = require('./events/translation.js');
+const ideaVault = require('./utils/models/idea-vault.js');
+
+Wilson.on('message', translation);
+
+Wilson.on('messageReactionAdd', ideaVault.messageReactionAdd);
+Wilson.on('messageReactionRemove', ideaVault.messageReactionRemove);
+
+
+Wilson.dispatcher.addInhibitor(msg => {
+	if (msg.webhookID) return 'nope';
+	return false;
+});
+
+
+Wilson.on('message', (msg) => {
+	if (!msg.author) return;
+	if (!msg.guild) return;
+	if (!msg.content.match(/https?:\/\//)) return;
+	msg.guild.members.fetch(msg.author).then((member) => {
+		const beenHereMinutes = (Date.now() - member.joinedTimestamp) / 1000 / 60;
+		if (beenHereMinutes < 10) {
+			msg.reply('welcome to the Wintergatan Discord server! To prevent spam and bots, there is a 10 minute wait time before new members can send links, so please try again in a moment. Thank you!').then(reply => {
+				setTimeout(() => {
+					reply.delete();
+				}, 60 * 1000);
+			});
+			msg.delete();
+		}
+	});
+});
+
+
+// guild ids for role transfers
+/**
+ * @typedef {String} oldRoleId
+ * @typedef {String} newRoleId
+ */
+const oldGuildId = '413366614747250708';
+const newGuildId = '649165975647682560';
+
+/**
+ * map for role transfers from old server member to new server
+ * @type {Map<oldRoleId, newRoleId>}
+ */
+const roleMap = new Map();
+
+roleMap.set('413371714827714560', '649189528958926887');    // admin
+roleMap.set('413371743416352768', '649189529231556609');    // moderator
+roleMap.set('453171669004058625', '650660087731585111');    // youtube
+roleMap.set('609714412554682378', '650660149857615873');    // twitch
+roleMap.set('453171752667709441', '650660135894646804');    // twitter
+roleMap.set('465044582569082881', '708972931430088715');    // community
+roleMap.set('465043327201443841', '708988136398651482');    // minecraft
+roleMap.set('418726756501946368', '650707449610895362');    // artist
+roleMap.set('418683780476174336', '651548732696821776');    // craftsman
+roleMap.set('418683680567853056', '651548761092259891');    // developer
+roleMap.set('418683762797314058', '651548957322903553');    // engineer
+roleMap.set('418718491781365761', '651548806533349426');    // gamer
+roleMap.set('418683641850232833', '651548778746216448');    // GFX designer
+roleMap.set('418726789444272129', '651548709527617557');    // musician
+roleMap.set('694608130629435432', '709469819874836541');    // john
+
+
+const mmxTeamRoleId = '650660016755310592';
+const ccAgreedRoleId = '709386821850759178';
+const mmxTeamCcAgreedRoleId = '709406460450177094';
+
+Wilson.on('guildMemberAdd', member => {
+	/**
+     * transfer roles from old server member to new server member
+     */
+	if (member.guild.id != newGuildId) return;  // if join is not in new server, return
+	const oldMember = Wilson.guilds.resolve(oldGuildId).members.resolve(member.id);
+	if (!oldMember) return; // if user is not in old server, return
+	oldMember.roles.cache.forEach((v, k) => {
+		const newId = roleMap.get(k);
+		if (newId) member.roles.add(newId); // if role is in map, add role
+	});
+});
+
+Wilson.on('guildMemberUpdate', (oldMember, newMember) => {
+	// if the roles have changed, do stuff
+	if (oldMember.roles.cache.keys() != newMember.roles.cache.keys()) {
+		const roles = newMember.roles.cache.keyArray(); // get updated roles
+		// if member has both roles and not the combined role, add combined role
+		if (roles.includes(mmxTeamRoleId) && roles.includes(ccAgreedRoleId) && !roles.includes(mmxTeamCcAgreedRoleId)) {
+			newMember.roles.add(mmxTeamCcAgreedRoleId);
+		// if member does not have both roles but has combined role, remove combined role
+		} else if ((!roles.includes(mmxTeamRoleId) || !roles.includes(ccAgreedRoleId)) && roles.includes(mmxTeamCcAgreedRoleId)) {
+			newMember.roles.remove(mmxTeamCcAgreedRoleId);
+		};
+	}
+});
+
+
+const updatesConfig = {
+	guild: secure.updateguild,
+	roles: secure.roles,
+	webhooks: secure.webhooks,
+};
+
+const Webhook = require('./webhook.js');
+const twitterWebhook = new Webhook(updatesConfig.webhooks.twitter);
+const youtubeWebhook = new Webhook(updatesConfig.webhooks.youtube);
+
 function twitter2Fetch() {
 	Wilson.fetches.twitter.last = Date.now();
-	require('./twitter2.js').fetch().then((x) => {
+	require('./utils/twitter2.js').fetch().then((x) => {
 		if (!x.new) return;
 		twitterWebhook.send(`<@&${updatesConfig.roles.twitter}>`, x.embed).catch(() => { }).then(() => {
 			updates.addUpdate(
@@ -72,10 +170,9 @@ function twitter2Fetch() {
 	});
 }
 
-
 function youtube2Fetch() {
 	Wilson.fetches.youtube.last = Date.now();
-	require('./youtube2.js').fetch().then((x) => {
+	require('./utils/youtube2.js').fetch().then((x) => {
 		if (!x.new) return;
 		youtubeWebhook.send(`<@&${updatesConfig.roles.youtube}>`, x.embed).catch(() => { }).then(() => {
 			updates.addUpdate(
@@ -100,149 +197,11 @@ Wilson.fetches = {
 	},
 };
 
-Wilson.on('ready', () => {
-	Wilson.dmManager = new (require('./utils/classes/DmManager.js'))(Wilson);
-
-	console.log(`{green}Ready!`);
-});
-
 Wilson.once('ready', () => {
 	if (secure.fetches.youtube) Wilson.fetches.youtube.run();
 	if (secure.fetches.twitter) Wilson.fetches.twitter.run();
 });
 
-Wilson.on('message', (msg) => {
-	if (!msg.author) return;
-	if (!msg.guild) return;
-	if (!msg.content.match(/https?:\/\//)) return;
-	msg.guild.members.fetch(msg.author).then((member) => {
-		const beenHereMinutes = (Date.now() - member.joinedTimestamp) / 1000 / 60;
-		if (beenHereMinutes < 10) {
-			msg.reply('welcome to the Wintergatan Discord server! To prevent spam and bots, there is a 10 minute wait time before new members can send links, so please try again in a moment. Thank you!').then(reply => {
-                setTimeout(() => {reply.delete()}, 60 * 1000);
-            });
-			msg.delete();
-		}
-	});
-});
-
-// subscribe the idea vault's events
-Wilson.on('messageReactionAdd', ideaVault.messageReactionAdd);
-
-Wilson.on('messageReactionRemove', ideaVault.messageReactionRemove);
-
-function createTranslateEmbed(msg, language) {
-	const embed = new MessageEmbed({
-		description: '[Original message](' + msg.url + ') ' + language,
-	});
-	embed.setColor(msg.member.displayColor || 16777215);
-	return embed;
-}
-
-/**
- * guild ids for role transfers
- */
-const oldGuildId = '413366614747250708';
-const newGuildId = '649165975647682560';
-
-/**
- * @typedef {String} oldRoleId
- * @typedef {String} newRoleId
- */
-
-/**
- * map for role transfers from old server member to new server
- * @type {Map<oldRoleId, newRoleId>}
- */
-const roleMap = new Map();
-
-roleMap.set('413371714827714560', '649189528958926887');    // admin
-roleMap.set('413371743416352768', '649189529231556609');    // moderator
-roleMap.set('453171669004058625', '650660087731585111');    // youtube
-roleMap.set('609714412554682378', '650660149857615873');    // twitch
-roleMap.set('453171752667709441', '650660135894646804');    // twitter
-roleMap.set('465044582569082881', '708972931430088715');    // community
-roleMap.set('465043327201443841', '708988136398651482');    // minecraft
-roleMap.set('418726756501946368', '650707449610895362');    // artist
-roleMap.set('418683780476174336', '651548732696821776');    // craftsman
-roleMap.set('418683680567853056', '651548761092259891');    // developer
-roleMap.set('418683762797314058', '651548957322903553');    // engineer
-roleMap.set('418718491781365761', '651548806533349426');    // gamer
-roleMap.set('418683641850232833', '651548778746216448');    // GFX designer
-roleMap.set('418726789444272129', '651548709527617557');    // musician
-roleMap.set('694608130629435432', '709469819874836541');    // john
-
-Wilson.on('guildMemberAdd', member => {
-	/**
-     * transfer roles from old server member to new server member
-     */
-	if (member.guild.id != newGuildId) return;  // if join is not in new server, return
-	const oldMember = Wilson.guilds.resolve(oldGuildId).members.resolve(member.id);
-	if (!oldMember) return; // if user is not in old server, return
-	oldMember.roles.cache.forEach((v, k) => {
-		const newId = roleMap.get(k);
-		if (newId) member.roles.add(newId); // if role is in map, add role
-	});
-});
-
-const mmxTeamRoleId = '650660016755310592';
-const ccAgreedRoleId = '709386821850759178';
-const mmxTeamCcAgreedRoleId = '709406460450177094';
-
-Wilson.on('guildMemberUpdate', (oldMember, newMember) => {
-	// if the roles have changed, do stuff
-	if (oldMember.roles.cache.keys() != newMember.roles.cache.keys()) {
-		const roles = newMember.roles.cache.keyArray(); // get updated roles
-		// if member has both roles and not the combined role, add combined role
-		if (roles.includes(mmxTeamRoleId) && roles.includes(ccAgreedRoleId) && !roles.includes(mmxTeamCcAgreedRoleId)) {
-			newMember.roles.add(mmxTeamCcAgreedRoleId);
-		// if member does not have both roles but has combined role, remove combined role
-		} else if ((!roles.includes(mmxTeamRoleId) || !roles.includes(ccAgreedRoleId)) && roles.includes(mmxTeamCcAgreedRoleId)) {
-			newMember.roles.remove(mmxTeamCcAgreedRoleId);
-		};
-	}
-});
-
-Wilson.on('message', async (msg) => {
-	if (msg.webhookID) return;
-	if (msg.channel.id !== secure.translation.from) return;
-	const toChannel = await msg.guild.channels.cache.get(secure.translation.to);
-	toChannel.fetchWebhooks().then(async webhooks => {
-		if (webhooks.first()) return webhooks.first();
-		else {
-			return await toChannel.createWebhook('Translation', {});
-		}
-	}).then(async (webhook) => {
-		if (!webhook) return console.error('No Translation Webhook');
-		const translated = await translation.translateText(msg.content);
-		const language = await translation.detectLanguage(msg.content);
-
-		const embed = createTranslateEmbed(msg, `(${translation.emoji(language[0][0].split('-')[0])} ${language[0][1]})`);
-		webhook.send(translated[0], {
-			username: msg.member.nickname ? `${msg.member.nickname} (${msg.author.username}#${msg.author.discriminator})` : `${`${msg.author.username}#${msg.author.discriminator}`}`,
-			avatarURL: msg.author.avatarURL(),
-			embeds: [embed, ...msg.embeds],
-			files: msg.attachments.array(),
-			allowedMentions: {
-				parse: [],
-			},
-		});
-	});
-});
-
-Wilson.on('message', async (msg) => {
-	if (!msg.author.bot && !msg.content && msg.channel.type == 'dm') Wilson.dmManager.newMessage(msg);
-});
-
-Wilson.on('unknownCommand', (msg) => {
-	if (!msg.author.bot && msg.channel.type == 'dm') Wilson.dmManager.newMessage(msg);
-});
-
-Wilson.on('error', (msg) => {
-	console.log('{red}Error!{reset}', msg);
-});
-
-Wilson.login(secure.token);
 
 const colours = {
 	black: '\x1b[30m',
@@ -271,3 +230,6 @@ global.console.log = function(...args) {
 	});
 	return oldLog(new Date().toISOString().replace('T', ' ').replace('Z', ''), ...args);
 };
+
+
+Wilson.login(secure.token);
