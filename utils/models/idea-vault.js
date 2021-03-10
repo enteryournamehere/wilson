@@ -362,17 +362,19 @@ async function refreshPosts({ idea, post, msg }) {
 	if (!idea && post) idea = await getIdeaByPost(post.id);
 	if (!idea && msg) idea = await getIdeaByMsg(msg.id);
 
-	if (!msg) msg = await Wilson
-										.guilds.cache.get(idea.guild)
-										?.channels.cache.get(idea.message_channel)
-										?.messages.fetch(idea.message);
-	if (!msg) return;
+  try {
+    if (!msg) msg = await Wilson
+                      .guilds.cache.get(idea.guild)
+                      ?.channels.cache.get(idea.message_channel)
+                      ?.messages.fetch(idea.message);
 
-	if (!post) post = await Wilson
-										.guilds.cache.get(idea.guild)
-										?.channels.cache.get(idea.post_channel)
-										?.messages.fetch(idea.post);
-	if (!post) return;
+    if (!post) post = await Wilson
+                      .guilds.cache.get(idea.guild)
+                      ?.channels.cache.get(idea.post_channel)
+                      ?.messages.fetch(idea.post);
+  } catch { return null; }
+
+  if (!post || !post.embeds) return null;
 
 	post.embeds[0].setFooter(
 		generatePostEmbedFooterText(idea.id, await getReactionCount(msg), post, idea.tagged_channel),
