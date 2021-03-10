@@ -555,7 +555,12 @@ async function ready() {
 
 			// Check if the DB has information which needs to be saved to Airtable.
 			if (!(idea.id in airtableTruth) || !idea.airtable_updated) {
-				await synchronizeAirtableIdea({ idea });
+				try {
+					await synchronizeAirtableIdea({ idea });
+				}
+				catch (e) {
+					console.log(`Error when syncronizing idea ${idea.id}:`, e);
+				}
 			} else {
 				// Check if the Airtable channel ID has changed
 				const airtableChannelName = airtableTruth[idea.id];
