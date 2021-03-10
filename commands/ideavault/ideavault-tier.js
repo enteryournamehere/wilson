@@ -46,7 +46,7 @@ module.exports = class IdeaVaultTierCommand extends Command {
 			case '': // Do nothing. We want the code below to execute.
 			case 'list':
 				const tiers = await ideaVault.getTiers(msg.guild.id).then(tiers => {
-					tiers.sort((a, b) => a.threshold - b.threshold);
+					return tiers.sort((a, b) => a.threshold - b.threshold);
 				});
 				if (!tiers) {
 					return await msg.say('There are no tiers set up for the idea vault.');

@@ -21,15 +21,26 @@
         "id": "idididid",
         "callback": "uri"
     },
+    "airtable": {
+      "base": "string starting with app in url",
+      "apiKey": "from account page",
+      "tables": {
+        "ideas": "literal table name"
+      }
+    },
     "webhooks": {
-		"youtube": "discord webhook link",
-		"twitter": "discord webhook link",
-		"instagram": "discord webhook link"
+      "youtube": "discord webhook link",
+      "twitter": "discord webhook link",
+      "instagram": "discord webhook link"
     },
     "roles": {
-		"youtube": "role id",
-		"twitter": "r o l e   i d",
-		"instagram": "r  o  l  e     i  d"
+      "youtube": "role id",
+      "twitter": "r o l e   i d",
+      "instagram": "r  o  l  e     i  d"
+    },
+    "translation": {
+      "from": "channel id ",
+      "to": "channel id"
     },
     "fetches": {
         "youtube": false,
@@ -37,7 +48,9 @@
         "instagram": false
     },
     "guildsToBridge": [],
-    "ideaVaultCategory": "channel id",
+    "ideaVaultCategory": "category id",
+    "ideaVaultAdditionalChannels": [],
     "ideaVaultCommentRoles": [],
-    "updateguild": "where updates should be sent"
+    "updateguild": "where updates should be sent",
+    "ideaVaultOrganizersChannel": "channel id"
 }

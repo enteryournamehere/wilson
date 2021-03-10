@@ -1,20 +1,12 @@
 const secure = require('./secure.json');
-const Commando = require('discord.js-commando');
 const path = require('path');
 const SequelizeProvider = require('./utils/Sequelize');
 const database = require('./utils/database.js');
 const updates = require('./utils/models/updates.js');
-
-
-const Wilson = new Commando.Client({
-	owner: secure.owners,
-	commandPrefix: secure.prefix,
-	unknownCommandResponse: false,
-	disableEveryone: true,
-	messageCacheMaxSize: 50,
-	disabledEvents: ['TYPING_START'],
-	partials: ['MESSAGE', 'REACTION'],
-});
+const { Wilson } = require('./utils/wilson');
+const translation = require('./events/translation.js');
+const ideaVault = require('./utils/models/idea-vault.js');
+const Webhook = require('./utils/webhook.js');
 
 Wilson.registry
 	.registerGroups([
@@ -48,13 +40,14 @@ Wilson.setProvider(new SequelizeProvider(database.db)).catch(console.error);
 
 
 // Events
-const translation = require('./events/translation.js');
-const ideaVault = require('./utils/models/idea-vault.js');
-
 Wilson.on('message', translation);
 
+// subscribe the idea vault's events
+Wilson.on('channelUpdate', ideaVault.channelUpdate);
 Wilson.on('messageReactionAdd', ideaVault.messageReactionAdd);
 Wilson.on('messageReactionRemove', ideaVault.messageReactionRemove);
+Wilson.on('messageUpdate', ideaVault.messageUpdate);
+Wilson.on('ready', ideaVault.ready);
 
 
 Wilson.dispatcher.addInhibitor(msg => {
@@ -79,7 +72,6 @@ Wilson.on('message', (msg) => {
 		}
 	});
 });
-
 
 // guild ids for role transfers
 /**
@@ -118,8 +110,8 @@ const mmxTeamCcAgreedRoleId = '709406460450177094';
 
 Wilson.on('guildMemberAdd', member => {
 	/**
-     * transfer roles from old server member to new server member
-     */
+		 * transfer roles from old server member to new server member
+		 */
 	if (member.guild.id != newGuildId) return;  // if join is not in new server, return
 	const oldMember = Wilson.guilds.resolve(oldGuildId).members.resolve(member.id);
 	if (!oldMember) return; // if user is not in old server, return
@@ -150,7 +142,6 @@ const updatesConfig = {
 	webhooks: secure.webhooks,
 };
 
-const Webhook = require('./webhook.js');
 const twitterWebhook = new Webhook(updatesConfig.webhooks.twitter);
 const youtubeWebhook = new Webhook(updatesConfig.webhooks.youtube);
 
