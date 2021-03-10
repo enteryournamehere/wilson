@@ -159,15 +159,17 @@ async function findMessageChannelFromIdeaPost(idea) {
 	// (The only other option seems to be checking every channel, which is definitely a worse option.)
 	if (!idea.post_channel || idea.post_channel === RESERVED_IDEA_POST_ID) return null;
 
-	const post = await Wilson
-									.guilds.cache.get(idea.guild)
-									.channels.cache.get(idea.post_channel)
-									.messages.fetch(idea.post);
+  try {
+    const post = await Wilson
+                    .guilds.cache.get(idea.guild)
+                    .channels.cache.get(idea.post_channel)
+                    .messages.fetch(idea.post);
 
-	const originalMessage = post.embeds[0].fields.filter((f) => f.name === 'Original message')[0]?.value || null;
-	if (!originalMessage) return null;
+    const originalMessage = post.embeds[0].fields.filter((f) => f.name === 'Original message')[0]?.value || null;
+    if (!originalMessage) return null;
 
-	return originalMessage.match(/discord.com\/channels\/\w+\/(\w+)\//)[1] || null;
+    return originalMessage.match(/discord.com\/channels\/\w+\/(\w+)\//)[1] || null;
+  } catch (ex) { return null; } // Idea vault post is missing
 }
 
 async function backfillMissing(query, afterUpdate) {
