@@ -374,7 +374,7 @@ async function refreshPosts({ idea, post, msg }) {
                       ?.messages.fetch(idea.post);
   } catch { return null; }
 
-  if (!post || !post.embeds) return null;
+  if (!post || !post.embeds || post.embeds.length === 0 || !post.embeds[0]) return null;
 
 	post.embeds[0].setFooter(
 		generatePostEmbedFooterText(idea.id, await getReactionCount(msg), post, idea.tagged_channel),
