@@ -551,31 +551,33 @@ async function ready() {
 		const serverTruth = await ideas.findAll();
 
 		for (const maybeIdea of serverTruth) {
-			// Historical posts will be missing channel information which needs to be fetched.
-			const idea = await backfillMissing(maybeIdea, async (result) => {
-				await refreshPosts({ idea: result });
-				await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_SLOWDOWN_DELAY));
-			});
+      try {
+        // Historical posts will be missing channel information which needs to be fetched.
+        const idea = await backfillMissing(maybeIdea, async (result) => {
+          await refreshPosts({ idea: result });
+          await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_SLOWDOWN_DELAY));
+        });
 
-			// Check if the DB has information which needs to be saved to Airtable.
-			if (!(idea.id in airtableTruth) || !idea.airtable_updated) {
-				try {
-					await synchronizeAirtableIdea({ idea });
-				}
-				catch (e) {
-					console.log(`Error when syncronizing idea ${idea.id}:`, e);
-				}
-			} else {
-				// Check if the Airtable channel ID has changed
-				const airtableChannelName = airtableTruth[idea.id];
-				const airtableChannel = Wilson.guilds.cache.get(idea.guild).channels.cache.find((ch) => ch.name == airtableChannelName);
-        if (airtableChannelName && !airtableChannel) {
-          console.error(`Airtable had invalid channel name ${airtableChannelName} for idea #${idea.id}.`);
-          if (idea.tagged_channel) await updatePostTaggedChannel(idea, airtableChannel);
-        } else if (!airtableChannelName || (airtableChannel?.id !== idea.tagged_channel)) {
-					await updatePostTaggedChannel(idea, airtableChannel);
-				}
-			}
+        // Check if the DB has information which needs to be saved to Airtable.
+        if (!(idea.id in airtableTruth) || !idea.airtable_updated) {
+          try {
+            await synchronizeAirtableIdea({ idea });
+          }
+          catch (e) {
+            console.log(`Error when syncronizing idea ${idea.id}:`, e);
+          }
+        } else {
+          // Check if the Airtable channel ID has changed
+          const airtableChannelName = airtableTruth[idea.id];
+          const airtableChannel = Wilson.guilds.cache.get(idea.guild).channels.cache.find((ch) => ch.name == airtableChannelName);
+          if (airtableChannelName && !airtableChannel) {
+            console.error(`Airtable had invalid channel name ${airtableChannelName} for idea #${idea.id}.`);
+            if (idea.tagged_channel) await updatePostTaggedChannel(idea, airtableChannel);
+          } else if (!airtableChannelName || (airtableChannel?.id !== idea.tagged_channel)) {
+            await updatePostTaggedChannel(idea, airtableChannel);
+          }
+        }
+      } catch (err) { console.error('Airtable sync - ', err); }
 		}
 
 		console.log('Sync done');
