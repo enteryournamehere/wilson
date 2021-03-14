@@ -119,7 +119,7 @@ function insertIdea(msg, post) {
 		post: post.id,
 		post_channel: post.channel.id,
 		// Only idea vault categories are pre-tagged.
-		tagged_channel: msg.channel.parent.id === secure.ideaVaultCategory ? msg.channel.id : null,
+		tagged_channel: secure.ideaVaultUncategorizedChannels.includes(msg.channel.id) ? null : msg.channel.id,
 	});
 };
 
@@ -186,7 +186,9 @@ async function backfillMissing(query, afterUpdate) {
 			// Fallback, search all channels.
 			if (!result.message_channel) result.message_channel = (await findMessageChannel(result.guild, result.message)).id;
 
-			result.tagged_channel = result.message_channel;
+      if (!result.tagged_channel && !secure.ideaVaultUncategorizedChannels.includes(result.message_channel)) {
+        result.tagged_channel = result.message_channel;
+      }
 			await result.save();
 			afterUpdate && await afterUpdate(result, discordRequest);
 		}
@@ -326,10 +328,12 @@ async function synchronizeAirtableIdea({ idea, msg, post, reactionCount }) {
 	if (idea.id in airtableSynchronizingPending && airtableSynchronizingPending[idea.id]) return;
 	airtableSynchronizingPending[idea.id] = true;
 
-	if (!msg) msg = await Wilson
-										.guilds.cache.get(idea.guild)
-										.channels.cache.get(idea.message_channel)
-										.messages.fetch(idea.message);
+  try {
+    if (!msg) msg = await Wilson
+                      .guilds.cache.get(idea.guild)
+                      .channels.cache.get(idea.message_channel)
+                      .messages.fetch(idea.message);
+  } catch (ex) { return; }
 
 	await upsertAirtableIdea({
 		ideaNumber: idea.id,
@@ -340,7 +344,7 @@ async function synchronizeAirtableIdea({ idea, msg, post, reactionCount }) {
 		postText: msg.content,
 		postImageUrls: msg.attachments?.map((m) => m.url),
 		originalMessageLink: msg.url,
-		initialIssueCategory: msg.channel.parent.id === secure.ideaVaultCategory ? msg.channel.name : null,
+		initialIssueCategory: secure.ideaVaultUncategorizedChannels.includes(msg.channel.id) ? null : msg.channel.name,
 	});
 
 	airtableSynchronizingPending[idea.id] = false;
@@ -432,7 +436,7 @@ async function messageReactionAdd(reaction, user) {
 	// Only allow reactions to posts in the ideaVaultCategory channels. TODO: Make channel configurable per guild
 	if (!reaction.message.channel.parent || !(
 		reaction.message.channel.parent.id === secure.ideaVaultCategory
-		|| secure.ideaVaultAdditionalChannels.includes(reaction.message.channel.id)
+		|| secure.ideaVaultUncategorizedChannels.includes(reaction.message.channel.id)
 	)) return;
 
 	// If people are reacting to a post in the idea vault, instead of the original message, the reaction will not be
@@ -488,7 +492,7 @@ async function messageReactionRemove(reaction, user) {
 	// TODO: Make channel configurable per guild
 	if (!reaction.message.channel.parent || !(
 		reaction.message.channel.parent.id === secure.ideaVaultCategory
-		|| secure.ideaVaultAdditionalChannels.includes(reaction.message.channel.id)
+		|| secure.ideaVaultUncategorizedChannels.includes(reaction.message.channel.id)
 	)) return;
 
 	const idea = await getIdeaByMsg(reaction.message.id);
@@ -527,7 +531,7 @@ async function messageUpdate(oldMessage, message) {
 	// TODO: Make channel configurable per guild
 	if (!message.channel.parent || !(
 		message.channel.parent.id === secure.ideaVaultCategory
-		|| secure.ideaVaultAdditionalChannels.includes(message.channel.id)
+		|| secure.ideaVaultUncategorizedChannels.includes(message.channel.id)
 	)) return;
 
 	const idea = await getIdeaByMsg(message.id);
