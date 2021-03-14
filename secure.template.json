@@ -50,6 +50,7 @@
     "guildsToBridge": [],
     "ideaVaultCategory": "category id",
     "ideaVaultAdditionalChannels": [],
+    "ideaVaultAdditionalCategorizedChannels": [],
     "ideaVaultCommentRoles": [],
     "updateguild": "where updates should be sent",
     "ideaVaultOrganizersChannel": "channel id"

@@ -119,7 +119,7 @@ function insertIdea(msg, post) {
 		post: post.id,
 		post_channel: post.channel.id,
 		// Only idea vault categories are pre-tagged.
-		tagged_channel: secure.ideaVaultUncategorizedChannels.includes(msg.channel.id) ? null : msg.channel.id,
+		tagged_channel: secure.ideaVaultUncategorizedChannels?.includes(msg.channel.id) ? null : msg.channel.id,
 	});
 };
 
@@ -186,7 +186,7 @@ async function backfillMissing(query, afterUpdate) {
 			// Fallback, search all channels.
 			if (!result.message_channel) result.message_channel = (await findMessageChannel(result.guild, result.message)).id;
 
-      if (!result.tagged_channel && !secure.ideaVaultUncategorizedChannels.includes(result.message_channel)) {
+      if (!result.tagged_channel && !secure.ideaVaultUncategorizedChannels?.includes(result.message_channel)) {
         result.tagged_channel = result.message_channel;
       }
 			await result.save();
@@ -344,7 +344,7 @@ async function synchronizeAirtableIdea({ idea, msg, post, reactionCount }) {
 		postText: msg.content,
 		postImageUrls: msg.attachments?.map((m) => m.url),
 		originalMessageLink: msg.url,
-		initialIssueCategory: secure.ideaVaultUncategorizedChannels.includes(msg.channel.id) ? null : msg.channel.name,
+		initialIssueCategory: secure.ideaVaultUncategorizedChannels?.includes(msg.channel.id) ? null : msg.channel.name,
 	});
 
 	airtableSynchronizingPending[idea.id] = false;
@@ -436,7 +436,8 @@ async function messageReactionAdd(reaction, user) {
 	// Only allow reactions to posts in the ideaVaultCategory channels. TODO: Make channel configurable per guild
 	if (!reaction.message.channel.parent || !(
 		reaction.message.channel.parent.id === secure.ideaVaultCategory
-		|| secure.ideaVaultUncategorizedChannels.includes(reaction.message.channel.id)
+		|| secure.ideaVaultUncategorizedChannels?.includes(reaction.message.channel.id)
+    || secure.ideaVaultAdditionalCategorizedChannels?.includes(reaction.message.channel.id)
 	)) return;
 
 	// If people are reacting to a post in the idea vault, instead of the original message, the reaction will not be
@@ -492,7 +493,8 @@ async function messageReactionRemove(reaction, user) {
 	// TODO: Make channel configurable per guild
 	if (!reaction.message.channel.parent || !(
 		reaction.message.channel.parent.id === secure.ideaVaultCategory
-		|| secure.ideaVaultUncategorizedChannels.includes(reaction.message.channel.id)
+		|| secure.ideaVaultUncategorizedChannels?.includes(reaction.message.channel.id)
+    || secure.ideaVaultAdditionalCategorizedChannels?.includes(reaction.message.channel.id)
 	)) return;
 
 	const idea = await getIdeaByMsg(reaction.message.id);
@@ -531,7 +533,8 @@ async function messageUpdate(oldMessage, message) {
 	// TODO: Make channel configurable per guild
 	if (!message.channel.parent || !(
 		message.channel.parent.id === secure.ideaVaultCategory
-		|| secure.ideaVaultUncategorizedChannels.includes(message.channel.id)
+		|| secure.ideaVaultUncategorizedChannels?.includes(message.channel.id)
+    || secure.ideaVaultAdditionalCategorizedChannels?.includes(message.channel.id)
 	)) return;
 
 	const idea = await getIdeaByMsg(message.id);
