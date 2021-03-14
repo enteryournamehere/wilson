@@ -575,7 +575,7 @@ async function ready() {
           const airtableChannelName = airtableTruth[idea.id];
           const airtableChannel = Wilson.guilds.cache.get(idea.guild).channels.cache.find((ch) => ch.name == airtableChannelName);
           if (airtableChannelName && !airtableChannel) {
-            console.error(`Airtable had invalid channel name ${airtableChannelName} for idea #${idea.id}.`);
+            // Airtable had invalid channel name `airtableChannelName`, so we will still show it as uncategorized in Discord.
             if (idea.tagged_channel) await updatePostTaggedChannel(idea, airtableChannel);
           } else if (!airtableChannelName || (airtableChannel?.id !== idea.tagged_channel)) {
             await updatePostTaggedChannel(idea, airtableChannel);
