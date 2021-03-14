@@ -554,6 +554,8 @@ async function ready() {
 		const airtableTruth = await airtableGetIdeasAndCategories();
 		const serverTruth = await ideas.findAll();
 
+    const missingChannelWarnings = {};
+
 		for (const maybeIdea of serverTruth) {
       try {
         // Historical posts will be missing channel information which needs to be fetched.
@@ -576,6 +578,9 @@ async function ready() {
           const airtableChannel = Wilson.guilds.cache.get(idea.guild).channels.cache.find((ch) => ch.name == airtableChannelName);
           if (airtableChannelName && !airtableChannel) {
             // Airtable had invalid channel name `airtableChannelName`, so we will still show it as uncategorized in Discord.
+            if (!(airtableChannelName in missingChannelWarnings)) missingChannelWarnings[airtableChannelName] = 1;
+            else missingChannelWarnings[airtableChannelName] += 1;
+
             if (idea.tagged_channel) await updatePostTaggedChannel(idea, airtableChannel);
           } else if (!airtableChannelName || (airtableChannel?.id !== idea.tagged_channel)) {
             await updatePostTaggedChannel(idea, airtableChannel);
@@ -583,6 +588,12 @@ async function ready() {
         }
       } catch (err) { console.error('Airtable sync - ', err); }
 		}
+
+    Object.keys(missingChannelWarnings)
+      .forEach((airtableChannelName) => {
+        const count = missingChannelWarnings[airtableChannelName];
+        console.warn(`Airtable had invalid channel name ${airtableChannelName} for ${count} idea${count !== 1 ? 's' : ''}.`)
+      });
 
 		console.log('Sync done');
 		setTimeout(airtableSync, AIRTABLE_SYNC_CATEGORIES_INTERVAL);
