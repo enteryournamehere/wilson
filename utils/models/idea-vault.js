@@ -150,8 +150,8 @@ function toggleCommentVisibility(id, author) {
 }
 
 async function getReactionCount(message, refresh) {
-  const updatedMessage = refresh ? await message.channel.messages.fetch(message.id) : message;
-  return updatedMessage.reactions.cache.filter(a => a.emoji.name == IDEA_VOTE_EMOJI).map(reaction => reaction.count)[0] || 0;
+	const updatedMessage = refresh ? await message.channel.messages.fetch(message.id) : message;
+	return updatedMessage.reactions.cache.filter(a => a.emoji.name == IDEA_VOTE_EMOJI).map(reaction => reaction.count)[0] || 0;
 }
 
 async function findMessageChannelFromIdeaPost(idea) {
@@ -159,17 +159,17 @@ async function findMessageChannelFromIdeaPost(idea) {
 	// (The only other option seems to be checking every channel, which is definitely a worse option.)
 	if (!idea.post_channel || idea.post_channel === RESERVED_IDEA_POST_ID) return null;
 
-  try {
-    const post = await Wilson
-                    .guilds.cache.get(idea.guild)
-                    .channels.cache.get(idea.post_channel)
-                    .messages.fetch(idea.post);
+	try {
+		const post = await Wilson
+			.guilds.cache.get(idea.guild)
+			.channels.cache.get(idea.post_channel)
+			.messages.fetch(idea.post);
 
-    const originalMessage = post.embeds[0].fields.filter((f) => f.name === 'Original message')[0]?.value || null;
-    if (!originalMessage) return null;
+		const originalMessage = post.embeds[0].fields.filter((f) => f.name === 'Original message')[0]?.value || null;
+		if (!originalMessage) return null;
 
-    return originalMessage.match(/discord.com\/channels\/\w+\/(\w+)\//)[1] || null;
-  } catch (ex) { return null; } // Idea vault post is missing
+		return originalMessage.match(/discord.com\/channels\/\w+\/(\w+)\//)[1] || null;
+	} catch (ex) { return null; } // Idea vault post is missing
 }
 
 async function backfillMissing(query, afterUpdate) {
@@ -186,9 +186,9 @@ async function backfillMissing(query, afterUpdate) {
 			// Fallback, search all channels.
 			if (!result.message_channel) result.message_channel = (await findMessageChannel(result.guild, result.message)).id;
 
-      if (!result.tagged_channel && !secure.ideaVaultUncategorizedChannels?.includes(result.message_channel)) {
-        result.tagged_channel = result.message_channel;
-      }
+			if (!result.tagged_channel && !secure.ideaVaultUncategorizedChannels?.includes(result.message_channel)) {
+				result.tagged_channel = result.message_channel;
+			}
 			await result.save();
 			afterUpdate && await afterUpdate(result, discordRequest);
 		}
@@ -252,8 +252,8 @@ function generatePostEmbedFooterText(id, count, msg, tagged_channel) {
 
 	// Unfortunately we cannot do tags in embeds, so we have to look up the channel name.
 	const channelName = msg.guild
-										.channels.cache.get(tagged_channel)
-										.name;
+		.channels.cache.get(tagged_channel)
+		.name;
 	return `${count} | Idea #${id} | Category: ${channelName}`;
 }
 
@@ -328,19 +328,19 @@ async function synchronizeAirtableIdea({ idea, msg, post, reactionCount }) {
 	if (idea.id in airtableSynchronizingPending && airtableSynchronizingPending[idea.id]) return;
 	airtableSynchronizingPending[idea.id] = true;
 
-  try {
-    if (!msg) msg = await Wilson
-                      .guilds.cache.get(idea.guild)
-                      .channels.cache.get(idea.message_channel)
-                      .messages.fetch(idea.message);
-  } catch (ex) { return; }
+	try {
+		if (!msg) msg = await Wilson
+			.guilds.cache.get(idea.guild)
+			.channels.cache.get(idea.message_channel)
+			.messages.fetch(idea.message);
+	} catch (ex) { return; }
 
 	await upsertAirtableIdea({
 		ideaNumber: idea.id,
 		bulbCount: reactionCount || await getReactionCount(msg),
 		postDateTime: msg.createdAt,
 		postedBy: msg.author?.username,
-    postedById: msg.author?.id,
+		postedById: msg.author?.id,
 		postText: msg.content,
 		postImageUrls: msg.attachments?.map((m) => m.url),
 		originalMessageLink: msg.url,
@@ -366,19 +366,19 @@ async function refreshPosts({ idea, post, msg }) {
 	if (!idea && post) idea = await getIdeaByPost(post.id);
 	if (!idea && msg) idea = await getIdeaByMsg(msg.id);
 
-  try {
-    if (!msg) msg = await Wilson
-                      .guilds.cache.get(idea.guild)
-                      ?.channels.cache.get(idea.message_channel)
-                      ?.messages.fetch(idea.message);
+	try {
+		if (!msg) msg = await Wilson
+			.guilds.cache.get(idea.guild)
+			?.channels.cache.get(idea.message_channel)
+			?.messages.fetch(idea.message);
 
-    if (!post) post = await Wilson
-                      .guilds.cache.get(idea.guild)
-                      ?.channels.cache.get(idea.post_channel)
-                      ?.messages.fetch(idea.post);
-  } catch { return null; }
+		if (!post) post = await Wilson
+			.guilds.cache.get(idea.guild)
+			?.channels.cache.get(idea.post_channel)
+			?.messages.fetch(idea.post);
+	} catch { return null; }
 
-  if (!post || !post.embeds || post.embeds.length === 0 || !post.embeds[0]) return null;
+	if (!post || !post.embeds || post.embeds.length === 0 || !post.embeds[0]) return null;
 
 	post.embeds[0].setFooter(
 		generatePostEmbedFooterText(idea.id, await getReactionCount(msg), post, idea.tagged_channel),
@@ -395,7 +395,7 @@ async function channelUpdate(oldChannel, newChannel) {
 
 	try {
 		await renameIssueCategory({ oldName: oldChannel.name, newName: newChannel.name });
-	} catch(err) {
+	} catch (err) {
 		await oldChannel.guild.channels.cache.get(secure.ideaVaultOrganizersChannel)
 			.send(
 				`An error occurred renaming ${oldChannel.name} to ${newChannel.name} on Airtable.`
@@ -404,11 +404,11 @@ async function channelUpdate(oldChannel, newChannel) {
 	}
 
 	await oldChannel.guild.channels.cache.get(secure.ideaVaultOrganizersChannel)
-			.send(
-        `\`${oldChannel.name}\` was renamed to <#${newChannel.id}>. I updated the Airtable entries, but I am not able`
-        + ` to remove \`${oldChannel.name}\` from the "Issue Category" drop-down options.\nCan someone please`
-        + ` **remove \`${oldChannel.name}\` from the "Issue Category" dropdown options in Airtable?**`
-      );
+		.send(
+			`\`${oldChannel.name}\` was renamed to <#${newChannel.id}>. I updated the Airtable entries, but I am not able`
+			+ ` to remove \`${oldChannel.name}\` from the "Issue Category" drop-down options.\nCan someone please`
+			+ ` **remove \`${oldChannel.name}\` from the "Issue Category" dropdown options in Airtable?**`
+		);
 
 	// Slowly update all the existing posts on a background thread. We could do this faster, but it would constantly
 	// trigger rate limits, which would prevent the rest of the bot from working until it completes.
@@ -430,14 +430,14 @@ async function messageReactionAdd(reaction, user) {
 	if (reaction.emoji.name !== IDEA_VOTE_EMOJI) return;
 
 	await reaction.fetch();
-  const reactionCount = await getReactionCount(reaction.message, true);
+	const reactionCount = await getReactionCount(reaction.message, true);
 	if (!isEnabled(reaction.message.guild.id)) return;
 
 	// Only allow reactions to posts in the ideaVaultCategory channels. TODO: Make channel configurable per guild
 	if (!reaction.message.channel.parent || !(
 		reaction.message.channel.parent.id === secure.ideaVaultCategory
 		|| secure.ideaVaultUncategorizedChannels?.includes(reaction.message.channel.id)
-    || secure.ideaVaultAdditionalCategorizedChannels?.includes(reaction.message.channel.id)
+		|| secure.ideaVaultAdditionalCategorizedChannels?.includes(reaction.message.channel.id)
 	)) return;
 
 	// If people are reacting to a post in the idea vault, instead of the original message, the reaction will not be
@@ -468,10 +468,10 @@ async function messageReactionAdd(reaction, user) {
 	idea.airtable_updated = false;
 	await idea.save();
 	synchronizeAirtableIdeaWithRetry({ idea, msg: reaction.message, post, reactionCount: reactionCount });
-  post.embeds[0].setFooter(
-    generatePostEmbedFooterText(idea.id, reactionCount, post, idea.tagged_channel),
-    IDEA_VOTE_EMOJI_IMAGE
-  );
+	post.embeds[0].setFooter(
+		generatePostEmbedFooterText(idea.id, reactionCount, post, idea.tagged_channel),
+		IDEA_VOTE_EMOJI_IMAGE
+	);
 
 	if (idea.post_channel !== tier.channel) { // We have reached a new tier, we need to move the message.
 		const newPost = await reaction.message.guild.channels.cache.get(tier.channel).send({ embed: post.embeds[0] });
@@ -488,13 +488,13 @@ async function messageReactionRemove(reaction, user) {
 	if (reaction.emoji.name !== IDEA_VOTE_EMOJI) return;
 
 	await reaction.fetch();
-  const reactionCount = await getReactionCount(reaction.message, true);
+	const reactionCount = await getReactionCount(reaction.message, true);
 	if (!isEnabled(reaction.message.guild.id)) return;
 	// TODO: Make channel configurable per guild
 	if (!reaction.message.channel.parent || !(
 		reaction.message.channel.parent.id === secure.ideaVaultCategory
 		|| secure.ideaVaultUncategorizedChannels?.includes(reaction.message.channel.id)
-    || secure.ideaVaultAdditionalCategorizedChannels?.includes(reaction.message.channel.id)
+		|| secure.ideaVaultAdditionalCategorizedChannels?.includes(reaction.message.channel.id)
 	)) return;
 
 	const idea = await getIdeaByMsg(reaction.message.id);
@@ -534,7 +534,7 @@ async function messageUpdate(oldMessage, message) {
 	if (!message.channel.parent || !(
 		message.channel.parent.id === secure.ideaVaultCategory
 		|| secure.ideaVaultUncategorizedChannels?.includes(message.channel.id)
-    || secure.ideaVaultAdditionalCategorizedChannels?.includes(message.channel.id)
+		|| secure.ideaVaultAdditionalCategorizedChannels?.includes(message.channel.id)
 	)) return;
 
 	const idea = await getIdeaByMsg(message.id);
@@ -547,8 +547,8 @@ async function messageUpdate(oldMessage, message) {
 	await idea.save();
 	synchronizeAirtableIdeaWithRetry({ idea, msg: message, post });
 
-  post.embeds[0].description = message.content;
-  await post.edit({ embed: post.embeds[0] });
+	post.embeds[0].description = message.content;
+	await post.edit({ embed: post.embeds[0] });
 }
 
 async function ready() {
@@ -557,46 +557,46 @@ async function ready() {
 		const airtableTruth = await airtableGetIdeasAndCategories();
 		const serverTruth = await ideas.findAll();
 
-    const missingChannelWarnings = {};
+		const missingChannelWarnings = {};
 
 		for (const maybeIdea of serverTruth) {
-      try {
-        // Historical posts will be missing channel information which needs to be fetched.
-        const idea = await backfillMissing(maybeIdea, async (result) => {
-          await refreshPosts({ idea: result });
-          await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_SLOWDOWN_DELAY));
-        });
+			try {
+				// Historical posts will be missing channel information which needs to be fetched.
+				const idea = await backfillMissing(maybeIdea, async (result) => {
+					await refreshPosts({ idea: result });
+					await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_SLOWDOWN_DELAY));
+				});
 
-        // Check if the DB has information which needs to be saved to Airtable.
-        if (!(idea.id in airtableTruth) || !idea.airtable_updated) {
-          try {
-            await synchronizeAirtableIdea({ idea });
-          }
-          catch (e) {
-            console.log(`Error when syncronizing idea ${idea.id}:`, e);
-          }
-        } else {
-          // Check if the Airtable channel ID has changed
-          const airtableChannelName = airtableTruth[idea.id];
-          const airtableChannel = Wilson.guilds.cache.get(idea.guild).channels.cache.find((ch) => ch.name == airtableChannelName);
-          if (airtableChannelName && !airtableChannel) {
-            // Airtable had invalid channel name `airtableChannelName`, so we will still show it as uncategorized in Discord.
-            if (!(airtableChannelName in missingChannelWarnings)) missingChannelWarnings[airtableChannelName] = 1;
-            else missingChannelWarnings[airtableChannelName] += 1;
+				// Check if the DB has information which needs to be saved to Airtable.
+				if (!(idea.id in airtableTruth) || !idea.airtable_updated) {
+					try {
+						await synchronizeAirtableIdea({ idea });
+					}
+					catch (e) {
+						console.log(`Error when syncronizing idea ${idea.id}:`, e);
+					}
+				} else {
+					// Check if the Airtable channel ID has changed
+					const airtableChannelName = airtableTruth[idea.id];
+					const airtableChannel = Wilson.guilds.cache.get(idea.guild).channels.cache.find((ch) => ch.name == airtableChannelName);
+					if (airtableChannelName && !airtableChannel) {
+						// Airtable had invalid channel name `airtableChannelName`, so we will still show it as uncategorized in Discord.
+						if (!(airtableChannelName in missingChannelWarnings)) missingChannelWarnings[airtableChannelName] = 1;
+						else missingChannelWarnings[airtableChannelName] += 1;
 
-            if (idea.tagged_channel) await updatePostTaggedChannel(idea, airtableChannel);
-          } else if (!airtableChannelName || (airtableChannel?.id !== idea.tagged_channel)) {
-            await updatePostTaggedChannel(idea, airtableChannel);
-          }
-        }
-      } catch (err) { console.error('Airtable sync - ', err); }
+						if (idea.tagged_channel) await updatePostTaggedChannel(idea, airtableChannel);
+					} else if (!airtableChannelName || (airtableChannel?.id !== idea.tagged_channel)) {
+						await updatePostTaggedChannel(idea, airtableChannel);
+					}
+				}
+			} catch (err) { console.error('Airtable sync - ', err); }
 		}
 
-    Object.keys(missingChannelWarnings)
-      .forEach((airtableChannelName) => {
-        const count = missingChannelWarnings[airtableChannelName];
-        console.warn(`Airtable had invalid channel name ${airtableChannelName} for ${count} idea${count !== 1 ? 's' : ''}.`)
-      });
+		Object.keys(missingChannelWarnings)
+			.forEach((airtableChannelName) => {
+				const count = missingChannelWarnings[airtableChannelName];
+				console.warn(`Airtable had invalid channel name ${airtableChannelName} for ${count} idea${count !== 1 ? 's' : ''}.`)
+			});
 
 		console.log('Sync done');
 		setTimeout(airtableSync, AIRTABLE_SYNC_CATEGORIES_INTERVAL);
@@ -622,5 +622,5 @@ module.exports = {
 	channelUpdate,
 	messageReactionAdd,
 	messageReactionRemove,
-  messageUpdate,
+	messageUpdate,
 };
