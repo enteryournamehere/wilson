@@ -39,6 +39,7 @@ async function upsertAirtableIdea({
 		[AIRTABLE_FIELDS.IDEA_NUMBER]: ideaNumber,
 		[AIRTABLE_FIELDS.ISSUE_CATEGORY]: initialIssueCategory,
 		[AIRTABLE_FIELDS.POST_IMAGES]: postImageUrls.map((url) => ({ url })), // Would need to track Airtable IDs to update
+		[AIRTABLE_FIELDS.GLORY_IMAGE]: postImageUrls.map((url) => ({ url })), // Would need to track Airtable IDs to update
 	};
 
   // no support for upsert in airtable, so we first do a lookup to see if the record exists:
