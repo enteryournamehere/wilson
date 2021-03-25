@@ -11,6 +11,7 @@ const AIRTABLE_FIELDS = {
 	POSTED_BY_TAG: 'Posted By Tag',
 	POST_TEXT: 'Post Text',
 	POST_IMAGES: 'Post Image(s)',
+	GLORY_IMAGE: 'Glory Image',
 	ORIGINAL_MESSAGE_LINK: 'Original Message Link',
 	CURATION_STATUS: 'Curation',
 };
