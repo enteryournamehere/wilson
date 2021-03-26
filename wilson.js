@@ -2,10 +2,10 @@ const secure = require('./secure.json');
 const path = require('path');
 const SequelizeProvider = require('./utils/Sequelize');
 const database = require('./utils/database.js');
-const updates = require('./utils/models/updates.js');
+const updates = require('./models/updates.js');
 const { Wilson } = require('./utils/wilson');
 const translation = require('./events/translation.js');
-const ideaVault = require('./utils/models/idea-vault.js');
+const ideaVault = require('./models/idea-vault.js');
 const Webhook = require('./utils/webhook.js');
 
 Wilson.registry

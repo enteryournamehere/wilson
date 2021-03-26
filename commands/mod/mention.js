@@ -1,5 +1,5 @@
 const commando = require('discord.js-commando');
-const mentionaccess = require('../../utils/models/mentionaccess.js');
+const mentionaccess = require('../../models/mentionaccess.js');
 
 module.exports = class MentionCommand extends commando.Command {
 	constructor(client) {

@@ -1,9 +1,9 @@
 /* eslint-disable new-cap */
 const Sequelize = require('sequelize');
-const { db } = require('../database.js');
-const { upsertAirtableIdea, renameIssueCategory, airtableGetIdeasAndCategories } = require('../airtable');
-const { Wilson, findMessageChannel } = require('../wilson');
-const secure = require('../../secure.json');
+const { db } = require('../utils/database.js');
+const { upsertAirtableIdea, renameIssueCategory, airtableGetIdeasAndCategories } = require('../utils/airtable');
+const { Wilson, findMessageChannel } = require('../utils/wilson');
+const secure = require('../secure.json');
 const { MessageEmbed } = require('discord.js');
 
 const RESERVED_IDEA_POST_ID = '0';
