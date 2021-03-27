@@ -2,6 +2,10 @@
 const Sequelize = require('sequelize');
 const { db } = require('../utils/database.js');
 
+/**
+ * Main Idea table
+ * @type {Sequelize.Model}
+ */
 const ideas = db.define('ideas', {
 	id: {
 		type: Sequelize.INTEGER,
@@ -26,6 +30,10 @@ const ideas = db.define('ideas', {
 	},
 }, { timestamps: false, charset: 'utf8mb4' });
 
+/**
+ * Table to remember if the Idea Vault is enabled for a specific guild
+ * @type {Sequelize.Model}
+ */
 const guilds = db.define('ideaguilds', {
 	id: {
 		type: Sequelize.STRING(25),
@@ -37,6 +45,10 @@ const guilds = db.define('ideaguilds', {
 	},
 });
 
+/**
+ * Table containing all channel tiers and their treshold
+ * @type {Sequelize.Model}
+ */
 const tiers = db.define('ideatiers', {
 	guild: Sequelize.STRING(25),
 	channel: {
@@ -52,6 +64,10 @@ const tiers = db.define('ideatiers', {
 	},
 });
 
+/**
+ * Table containing comments on ideas made by the MMX Team
+ * @type {Sequelize.Model}
+ */
 const comments = db.define('ideacomments', {
 	// Specifying mutliple columns as primary key will make it a composite primary key
 	idea: {
@@ -71,19 +87,34 @@ const comments = db.define('ideacomments', {
 
 db.sync();
 
+/**
+ * Get an inserted Idea by its message ID
+ * @param {string} msg_id - Idea message ID
+ */
+async function getIdeaByMsg(msg_id) {
+	return ideas.findOne({
 		where: {
+			message: msg_id,
 		},
 	});
 };
 
-async function getIdeaByPost(msg) {
+/**
+ * Get an inserted Idea by its post message ID
+ * @param {string} msg_id - Idea post ID
+ */
+async function getIdeaByPost(msg_id) {
 	return backfillMissing(ideas.findOne({
 		where: {
-			post: msg,
+			post: msg_id,
 		},
 	}));
 };
 
+/**
+ * Get an inserted Idea by its incremental ID
+ * @param {number} id - Incremental ID of the Idea
+ */
 async function getIdeaByID(id) {
 	return backfillMissing(ideas.findOne({
 		where: {
@@ -92,21 +123,38 @@ async function getIdeaByID(id) {
 	}));
 };
 
+/**
+ * Enable the Idea Vault for the specified guild
+ * @param {string} guild_id - ID of the guild to enable the Idea Vault for
+ */
+function enable(guild_id) {
 	return guilds.upsert({
+		id: guild_id,
 		enabled: true,
 	});
 };
 
+/**
+ * Disable the Idea Vault for the specified guild
+ * @param {string} guild_id - ID of the guild to disable the Idea Vault for
+ */
+function disable(guild_id) {
 	return guilds.upsert({
+		id: guild_id,
 		enabled: false,
 	});
 };
 
-function isEnabled(guild) {
+/**
+ * Check if the Idea Vault is enabled
+ * @param {string} guild_id - ID of the guild to check for
+ * @returns {boolean} - If the Idea Vault is enabled
+ */
+function isEnabled(guild_id) {
 	return guilds.findOne({
 		attributes: ['enabled'],
 		where: {
-			id: guild,
+			id: guild_id,
 		},
 	}).then(result => {
 		// Undefined evaluates to false. If it is undefined
@@ -115,45 +163,97 @@ function isEnabled(guild) {
 	});
 };
 
+/**
+ * Get all tiers for the specified guild
+ * @param {string} guild_id - Guild ID to get all tiers for
+ * @returns {Array} An Array of tier objects
+ */
+async function getTiers(guild_id) {
+	return tiers.findAll({
+		where: {
+			guild: guild_id,
 		},
 	});
 };
 
-const airtableSynchronizingPending = {}; // For retry logic, we will not retry currently pending updates.
-async function synchronizeAirtableIdea({ idea, msg, post, reactionCount }) {
-	if (!idea && post) idea = await getIdeaByPost(post.id);
-	if (!idea && msg) idea = await getIdeaByMsg(msg.id);
-
-	if (idea.id in airtableSynchronizingPending && airtableSynchronizingPending[idea.id]) return;
-	airtableSynchronizingPending[idea.id] = true;
-
-	try {
-		if (!msg) msg = await Wilson
-			.guilds.cache.get(idea.guild)
-			.channels.cache.get(idea.message_channel)
-			.messages.fetch(idea.message);
-	} catch (ex) { return; }
-
-	const embedThumbnails = msg.embeds?.map((e) => e.thumbnail?.url).filter(Boolean) || [];
-	const attachments = msg.attachments?.map((m) => m.url).filter(Boolean) || [];
-
-	await upsertAirtableIdea({
-		ideaNumber: idea.id,
-		bulbCount: reactionCount || await getReactionCount(msg),
-		postDateTime: msg.createdAt,
-		postedBy: msg.author?.username,
-		postedById: msg.author?.id,
-		postText: msg.content,
-		postImageUrls: [...embedThumbnails, ...attachments],
-		originalMessageLink: msg.url,
-		initialIssueCategory: secure.ideaVaultUncategorizedChannels?.includes(msg.channel.id) ? null : msg.channel.name,
+/**
+ * Set the treshold of a channel tier
+ * @param {string} guild_id - Guild ID for the channel
+ * @param {string} channel_id - ID of the channel to post to
+ * @param {number} threshold - The treshold to put the tier at
+ */
+async function setTier(guild_id, channel_id, threshold) {
+	return tiers.upsert({
+		guild: guild_id,
+		channel: channel_id,
+		threshold: threshold,
 	});
 };
 
+/**
+ * Remove a tier from the Idea Vault
+ * @param {string} channel_id - ID of the channel tier
+ */
+async function removeTier(channel_id) {
+	return tiers.destroy({
+		where: {
+			channel: channel_id,
+		},
+	});
+};
 
+/**
+ * Insert a new idea into the Idea Vault
+ * @param {Object} msg - Discord.js message to insert as an idea
+ * @param {Object} post - The idea post embed message
+ */
+function insertIdea(msg, post) {
+	return ideas.create({
+		guild: msg.guild.id,
+		message: msg.id,
+		message_channel: msg.channel.id,
+		post: post.id,
+		post_channel: post.channel.id,
+		// Only idea vault categories are pre-tagged.
+		tagged_channel: secure.ideaVaultUncategorizedChannels?.includes(msg.channel.id) ? null : msg.channel.id,
+	});
+};
 
+/**
+ * Upsert a comment on an idea
+ * @param {number} id - Idea ID to comment on
+ * @param {string} author_id - ID of the author of the comment
+ * @param {string} value - Value of the comment, the content
+ */
+function upsertComment(id, author_id, value) {
+	return comments.upsert({
+		idea: id,
+		author: author_id,
+		value: value,
+		visible: true,
+	});
+};
 
+/**
+ * Toggle the visibility of comments
+ * @param {number} id - Idea ID
+ * @param {string} author_id - ID of the comment's author
+ */
+function toggleCommentVisibility(id, author_id) {
+	return comments.findOne({
+		where: {
+			idea: id,
+			author: author_id
 		}
+	}).then(comment => {
+		if (comment === null) throw new Error('That user hasn\'t commented on that idea.');
+		comment.dataValues.visible = !comment.dataValues.visible;
+		return comments.upsert({
+			...comment.dataValues
+		}).then(() => {
+			return comment.dataValues;
+		})
+	})
 }
 
 module.exports = {
