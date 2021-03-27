@@ -148,7 +148,7 @@ function disable(guild_id) {
 /**
  * Check if the Idea Vault is enabled
  * @param {string} guild_id - ID of the guild to check for
- * @returns {boolean} - If the Idea Vault is enabled
+ * @return {boolean} - If the Idea Vault is enabled
  */
 function isEnabled(guild_id) {
 	return guilds.findOne({
@@ -166,7 +166,7 @@ function isEnabled(guild_id) {
 /**
  * Get all tiers for the specified guild
  * @param {string} guild_id - Guild ID to get all tiers for
- * @returns {Array} An Array of tier objects
+ * @return {Array} An Array of tier objects
  */
 async function getTiers(guild_id) {
 	return tiers.findAll({
