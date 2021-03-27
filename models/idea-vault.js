@@ -65,6 +65,18 @@ const tiers = db.define('ideatiers', {
 });
 
 /**
+ * Table for all allowed channels that ideas can be posted in
+ * @type {Sequelize.Model}
+ */
+const channels = db.define('ideachannels', {
+	id: {
+		type: Sequelize.STRING(25),
+		primaryKey: true
+	},
+	guild: Sequelize.STRING(25)
+});
+
+/**
  * Table containing comments on ideas made by the MMX Team
  * @type {Sequelize.Model}
  */
@@ -200,6 +212,19 @@ async function removeTier(channel_id) {
 			channel: channel_id,
 		},
 	});
+};
+
+/**
+ * Check if the specified channel is allowed
+ * @param {string} channel_id - ID of channel to check for 
+ * @return {boolean}
+ */
+function isAllowed(channel_id) {
+	return Boolean(channels.findOne({
+		where: {
+			id: channel_id,
+		},
+	}));
 };
 
 /**
