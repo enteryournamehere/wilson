@@ -3,6 +3,17 @@ const { Wilson, findMessageChannel } = require('../../utils/wilson');
 const secure = require('../../secure.json');
 const { MessageEmbed } = require('discord.js');
 
+async function messageReactionAdd(reaction, user) {
+	if (reaction.emoji.name !== utils.IDEA_VOTE_EMOJI) return;
+
+	await reaction.message.fetch(true);
+	await reaction.fetch();
+
+	if (!isEnabled(reaction.message.guild.id)) return;
+	if(!isAllowed(reaction.message.channel.parent?.id) && !isAllowed(reaction.message.channel.id)) return;
+
+	const idea = ideaVault.getIdeaByMsg(reaction.message.id);
+}
 
 async function getTierForBulbCount(guild, count) {
 	const tiers = await getTiers(guild);
@@ -162,6 +173,7 @@ async function updatePostTaggedChannel(idea, newChannel) {
 	refreshPosts({ idea });
 }
 
+/*
 async function messageReactionAdd(reaction, user) {
 	if (reaction.emoji.name !== IDEA_VOTE_EMOJI) return;
 
@@ -263,6 +275,7 @@ async function messageReactionRemove(reaction, user) {
 		await post.edit({ embed: post.embeds[0] });
 	};
 }
+*/
 
 async function messageUpdate(oldMessage, message) {
 	if (!isEnabled(message.guild.id)) return;
