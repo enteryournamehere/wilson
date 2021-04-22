@@ -335,6 +335,9 @@ async function synchronizeAirtableIdea({ idea, msg, post, reactionCount }) {
 			.messages.fetch(idea.message);
 	} catch (ex) { return; }
 
+	const embedThumbnails = msg.embeds?.map((e) => e.thumbnail?.url).filter(Boolean) || [];
+	const attachments = msg.attachments?.map((m) => m.url).filter(Boolean) || [];
+
 	await upsertAirtableIdea({
 		ideaNumber: idea.id,
 		bulbCount: reactionCount || await getReactionCount(msg),
@@ -342,7 +345,7 @@ async function synchronizeAirtableIdea({ idea, msg, post, reactionCount }) {
 		postedBy: msg.author?.username,
 		postedById: msg.author?.id,
 		postText: msg.content,
-		postImageUrls: msg.attachments?.map((m) => m.url),
+		postImageUrls: [...embedThumbnails, ...attachments],
 		originalMessageLink: msg.url,
 		initialIssueCategory: secure.ideaVaultUncategorizedChannels?.includes(msg.channel.id) ? null : msg.channel.name,
 	});
