@@ -5,6 +5,7 @@ const database = require('./utils/database.js');
 const updates = require('./utils/models/updates.js');
 const { Wilson } = require('./utils/wilson');
 const translation = require('./events/translation.js');
+const sticky = require('./events/sticky.js');
 const ideaVault = require('./utils/models/idea-vault.js');
 const Webhook = require('./utils/webhook.js');
 
@@ -41,6 +42,7 @@ Wilson.setProvider(new SequelizeProvider(database.db)).catch(console.error);
 
 // Events
 Wilson.on('message', translation);
+Wilson.on('message', sticky);
 
 // subscribe the idea vault's events
 Wilson.on('channelUpdate', ideaVault.channelUpdate);
