@@ -36,6 +36,6 @@ module.exports = class StickyCommand extends commando.Command {
 		}
 
 		await sticky.setSticky(msg.channel.id, text);
-		msg.say(text);
+		msg.say(text).then(sent => sticky.setPost(msg.channel.id, sent.id));
 	}
 };
