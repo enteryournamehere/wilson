@@ -26,7 +26,7 @@ const ideas = db.define('ideas', {
 	airtable_updated: {
 		type: Sequelize.BOOLEAN,
 		allowNull: false,
-		defaultValue: false
+		defaultValue: false,
 	},
 }, { timestamps: false, charset: 'utf8mb4' });
 
@@ -71,9 +71,9 @@ const tiers = db.define('ideatiers', {
 const channels = db.define('ideachannels', {
 	id: {
 		type: Sequelize.STRING(25),
-		primaryKey: true
+		primaryKey: true,
 	},
-	guild: Sequelize.STRING(25)
+	guild: Sequelize.STRING(25),
 });
 
 /**
@@ -171,7 +171,7 @@ function isEnabled(guild_id) {
 	}).then(result => {
 		// Undefined evaluates to false. If it is undefined
 		// we assume it's disabled, otherwise return the result.
-		return result ? result.enabled : false
+		return result ? result.enabled : false;
 	});
 };
 
@@ -216,7 +216,7 @@ async function removeTier(channel_id) {
 
 /**
  * Check if the specified channel is allowed
- * @param {string} channel_id - ID of channel to check for 
+ * @param {string} channel_id - ID of channel to check for
  * @return {boolean}
  */
 function isAllowed(channel_id) {
@@ -268,17 +268,17 @@ function toggleCommentVisibility(id, author_id) {
 	return comments.findOne({
 		where: {
 			idea: id,
-			author: author_id
-		}
+			author: author_id,
+		},
 	}).then(comment => {
 		if (comment === null) throw new Error('That user hasn\'t commented on that idea.');
 		comment.dataValues.visible = !comment.dataValues.visible;
 		return comments.upsert({
-			...comment.dataValues
+			...comment.dataValues,
 		}).then(() => {
 			return comment.dataValues;
-		})
-	})
+		});
+	});
 }
 
 module.exports = {
@@ -293,5 +293,5 @@ module.exports = {
 	removeTier,
 	insertIdea,
 	upsertComment,
-	toggleCommentVisibility
-}
+	toggleCommentVisibility,
+};
