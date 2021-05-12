@@ -135,6 +135,25 @@ async function getIdeaByID(id) {
 	}));
 };
 
+async function getIdeasByTaggedChannel(id) {
+	return ideas.findAll({
+		where: {
+			tagged_channel: id,
+		},
+	});
+}
+
+async function getAllIdeas() {
+	return ideas.findAll();
+}
+async function getUnsyncedIdeas() {
+	return ideas.findAll({
+		where: {
+			airtable_updated: false,
+		},
+	});
+}
+
 /**
  * Enable the Idea Vault for the specified guild
  * @param {string} guild_id - ID of the guild to enable the Idea Vault for
@@ -282,9 +301,13 @@ function toggleCommentVisibility(id, author_id) {
 }
 
 module.exports = {
+	ideas,
 	getIdeaByMsg,
 	getIdeaByPost,
 	getIdeaByID,
+	getIdeasByTaggedChannel,
+	getAllIdeas,
+	getUnsyncedIdeas,
 	enable,
 	disable,
 	isEnabled,

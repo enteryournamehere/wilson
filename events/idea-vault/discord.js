@@ -1,26 +1,38 @@
-const { underscoredIf } = require('sequelize/types/lib/utils');
 const ideaVault = require('../../models/idea-vault.js');
 const utils = require('./utils.js');
 
-async function updatePostCount(reaction, post) {
-	return 0;
+/**
+ * Update the post embeds bulb counts
+ * @param {Object} reaction Discord.js MessageReaction object
+ * @param {Object} idea The inserted idea
+ * @param {Object} post The Discord.js Message that was posted in a tier
+ */
+async function updatePostCount(reaction, idea, post) {
+	if (!post) return;
+
+	post.embeds[0].setFooter(
+		ideaVault.generatePostEmbedFooterText(idea.id, reaction.count, post, idea.tagged_channel),
+		utils.IDEA_VOTE_EMOJI_IMAGE,
+	);
+
+	await post.edit({ embed: post.embeds[0] });
 }
 
 /**
- * Handle tiers and moving if needed
- * @param {Object} reaction - Discord.js MessageReaction object
- * @param {Object} idea - Inserted Idea
- * @param {Object} post - Discord.js Message that was posted in a tier
- * @return {Object} - The new post message, else undefined
+ * Handle moving tiers or sending new posts if necessary
+ * @param {Object} reaction Discord.js MessageReaction object
+ * @param {Object} idea Inserted Idea
+ * @param {Object} post Discord.js Message that was posted in a tier
+ * @return {Object} The new post message, else undefined
  */
 async function handleTiers(reaction, idea = {id: '[loading]'}, post = {}) {
-	const tier = ideaVault.getTiers(reaction.message.guild.id)
-		.sort((a, b) => b.threshold - a.threshold)  // Ascending
-		.find(tier => reaction.count >= tier.threshold);
+	const tier = utils.getTierForBulbCount(reaction.message.guild.id, reaction.count);
 
 	if (!tier) {
+		// New idea (can only happen on reaction add)
 		if (idea.id === '[loading]') return console.log('New idea did not reach first tier!');
 
+		// Turn into reserved idea (can only happen on reaction remove)
 		idea.post = idea.post_channel = utils.RESERVED_IDEA_POST_ID;
 		idea.save();
 
@@ -28,9 +40,10 @@ async function handleTiers(reaction, idea = {id: '[loading]'}, post = {}) {
 		return undefined;
 	}
 
-	// Did not reach a new tier, do nothing
-	if (idea.post_channel === tier.channel) return undefined;
+	// Did not reach a different tier, do nothing
+	if (idea.post_channel === tier.channel) return post;
 
+	// Reached a different tier or its first tier
 	let embed = null;
 	if (post.embeds) {
 		embed = post.embeds[0];
@@ -41,9 +54,14 @@ async function handleTiers(reaction, idea = {id: '[loading]'}, post = {}) {
 
 	const newPost = await reaction.message.guild.channels.cache.get(tier.channel).send({ embed: embed });
 
-	idea.post = newPost.id;
-	idea.post_channel = newPost.channel.id;
-	await idea.save();
+	// New idea
+	if (idea.id !== '[loading]') {
+		// Update the old idea
+		idea.post = newPost.id;
+		idea.post_channel = newPost.channel.id;
+		await idea.save();
+	}
+
 	return newPost;
 }
 

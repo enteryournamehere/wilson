@@ -5,7 +5,7 @@ const database = require('./utils/database.js');
 const updates = require('./models/updates.js');
 const { Wilson } = require('./utils/wilson');
 const translation = require('./events/translation.js');
-const ideaVault = require('./models/idea-vault.js');
+const ideaVault = require('./events/idea-vault');
 const Webhook = require('./utils/webhook.js');
 
 Wilson.registry
@@ -47,7 +47,7 @@ Wilson.on('channelUpdate', ideaVault.channelUpdate);
 Wilson.on('messageReactionAdd', ideaVault.messageReactionAdd);
 Wilson.on('messageReactionRemove', ideaVault.messageReactionRemove);
 Wilson.on('messageUpdate', ideaVault.messageUpdate);
-Wilson.on('ready', ideaVault.ready);
+Wilson.on('ready', ideaVault.readyFactory(Wilson));
 
 
 Wilson.dispatcher.addInhibitor(msg => {
