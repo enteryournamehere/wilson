@@ -25,7 +25,8 @@ class ScheduledLock {
 	schedule(...args) {
 		this.cancel();
 
-		this.timeoutId = setTimeout(this.call, this.delay, ...args);
+		// The binding is necessary so that this points to the ScheduledLock instance
+		this.timeoutId = setTimeout(this.call.bind(this), this.delay, ...args);
 	}
 
 	async call(...args) {
@@ -38,6 +39,7 @@ class ScheduledLock {
 		try {
 			await this.func(...args);
 		} catch (err) {
+			console.log(`{red}Lock call failed with ${err}!`);
 			this.schedule(...args);
 		}
 		this.toggle();

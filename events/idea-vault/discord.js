@@ -1,4 +1,3 @@
-const ideaVault = require('../../models/idea-vault.js');
 const utils = require('./utils.js');
 
 /**
@@ -11,7 +10,7 @@ async function updatePostCount(reaction, idea, post) {
 	if (!post) return;
 
 	post.embeds[0].setFooter(
-		ideaVault.generatePostEmbedFooterText(idea.id, reaction.count, post, idea.tagged_channel),
+		utils.generatePostEmbedFooterText(idea.id, reaction.count, post, idea.tagged_channel),
 		utils.IDEA_VOTE_EMOJI_IMAGE,
 	);
 
@@ -26,11 +25,11 @@ async function updatePostCount(reaction, idea, post) {
  * @return {Object} The new post message, else undefined
  */
 async function handleTiers(reaction, idea = {id: '[loading]'}, post = {}) {
-	const tier = utils.getTierForBulbCount(reaction.message.guild.id, reaction.count);
+	const tier = await utils.getTierForBulbCount(reaction.message.guild.id, reaction.count);
 
 	if (!tier) {
 		// New idea (can only happen on reaction add)
-		if (idea.id === '[loading]') return console.log('New idea did not reach first tier!');
+		if (idea.id === '[loading]') return console.log('{red}New idea did not reach first tier!');
 
 		// Turn into reserved idea (can only happen on reaction remove)
 		idea.post = idea.post_channel = utils.RESERVED_IDEA_POST_ID;
@@ -49,7 +48,7 @@ async function handleTiers(reaction, idea = {id: '[loading]'}, post = {}) {
 		embed = post.embeds[0];
 	} else {
 		// New idea
-		embed = utils.generatePostEmbed(idea.id, reaction.message, reaction.count, [], reaction.message.channel.id);
+		embed = await utils.generatePostEmbed(idea.id, reaction.message, reaction.count, [], reaction.message.channel.id);
 	};
 
 	const newPost = await reaction.message.guild.channels.cache.get(tier.channel).send({ embed: embed });

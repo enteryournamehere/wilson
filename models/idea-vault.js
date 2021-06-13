@@ -1,6 +1,7 @@
 /* eslint-disable new-cap */
 const Sequelize = require('sequelize');
 const { db } = require('../utils/database.js');
+const secure = require('../secure.json');
 
 /**
  * Main Idea table
@@ -314,6 +315,7 @@ module.exports = {
 	getTiers,
 	setTier,
 	removeTier,
+	isAllowed,
 	insertIdea,
 	upsertComment,
 	toggleCommentVisibility,

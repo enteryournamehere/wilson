@@ -9,7 +9,8 @@ async function messageReactionAdd(reaction, _user) {
 	// This also fetches the reaction for us
 	if (!await utils.filterReaction(reaction)) return;
 
-	const idea = ideaVault.getIdeaByMsg(reaction.message.id);
+	// We prefer to pass undefined rather than null because undefined turns into the function's default.
+	let idea = await ideaVault.getIdeaByMsg(reaction.message.id) || undefined;
 	// If there's an idea inserted and it is not a reserved idea
 	let post = idea && idea.post !== utils.RESERVED_IDEA_POST_ID ?
 		await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post) :
@@ -17,23 +18,25 @@ async function messageReactionAdd(reaction, _user) {
 
 	// Handle moving tiers and override the post variable with a potential new post,
 	// the old post will be returned if nothing was done.
-	post = await handleTiers(reaction, idea, post);
+	post = await handleTiers(reaction, idea || undefined, post);
 
 	// Insert the new idea with its post
-	if (!idea) await ideaVault.insertIdea(reaction.message, post);
+	if (!idea) {
+		idea = await ideaVault.insertIdea(reaction.message, post);
+	}
 
 	// Edit the post
 	await updatePostCount(reaction, idea, post);
 
 	// Synchronize with airtable
-	await synchronize(idea, reaction);
+	await synchronizeReaction(idea, reaction);
 }
 
 async function messageReactionRemove(reaction, _user) {
 	// This also fetches the reaction for us
 	if (!await utils.filterReaction(reaction)) return;
 
-	const idea = ideaVault.getIdeaByMsg(reaction.message.id);
+	const idea = await ideaVault.getIdeaByMsg(reaction.message.id);
 	let post = await reaction.message.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
 
 	// Handle moving tiers and override the post variable with a potential new post,
@@ -44,7 +47,7 @@ async function messageReactionRemove(reaction, _user) {
 	await updatePostCount(reaction, idea, post);
 
 	// Synchronize with airtable
-	await synchronize(idea, reaction);
+	await synchronizeReaction(idea, reaction);
 }
 
 async function updateIdeaCategory(message, channel) {
@@ -62,12 +65,12 @@ async function channelUpdate(oldChannel, newChannel) {
 	if (oldChannel.name == newChannel.name) return;
 
 	const channel = newChannel.guild.channels.cache.get(secure.ideaVaultOrganizersChannel);
-	await channel.send(`${oldChannel.name} has been renamed to ${newChannel.name}, beginning migrations.`);
+	await channel.send(`{red}${oldChannel.name} has been renamed to ${newChannel.name}, beginning migrations.`);
 
 	// Rename in airtable
 	renameIssueCategory({ oldName: oldChannel.name, newName: newChannel.name }).error(async (err) => {
 		await channel.send(
-			`An error occured trying to rename ${oldChannel.name} to ${newChannel.name} on Airtable. ` +
+			`{red}An error occured trying to rename ${oldChannel.name} to ${newChannel.name} on Airtable. ` +
 			`This will have to be done manually by someone else.`,
 		);
 	});
@@ -99,11 +102,11 @@ async function synchronizeAirtableCategorization(bot) {
 			const post = await bot.guilds.cache.get(idea.guild).channels.cache.get(idea.post_channel).messages.fetch(idea.post);
 			await updateIdeaCategory(post, channel);
 		} else if (!channel) {
-			console.log(`Couldn't find channel ${channel} for Idea #${idea.id}!`);
+			console.log(`{red}Couldn't find channel ${categorizations[idea.id]} for Idea #${idea.id}!`);
 		}
 	}
 	// Start over
-	setTimeout(synchronizeAirtableCategorization, utils.AIRTABLE_SYNC_CATEGORIES_INTERVAL);
+	setTimeout(synchronizeAirtableCategorization, utils.AIRTABLE_SYNC_CATEGORIES_INTERVAL, bot);
 }
 
 // This is a so-called function factory, it allows us to use Wilson in the ready
@@ -115,7 +118,7 @@ function readyFactory(bot) {
 			console.log('Picking up idea synchronization where we left of.');
 			for (const idea of unsyncedIdeas) {
 				// Fetch the message and reaction, then synchronize with it
-				const msg = bot.guilds.cache.get(idea.guild).channels.cache.get(idea.message_channel).fetch(idea.message);
+				const msg = await bot.guilds.cache.get(idea.guild).channels.cache.get(idea.message_channel).messages.fetch(idea.message);
 				if (!msg) {
 					console.log(`Idea #${idea.id}'s message wasn't found!`);
 					continue;
