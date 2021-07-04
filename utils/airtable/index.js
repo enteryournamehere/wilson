@@ -1,10 +1,12 @@
 const Airtable = require('airtable');
-const { fetchPages } = require('./fetch');
-const { AIRTABLE_FIELDS, AIRTABLE_CURATION_STATUS } = require('./enums');
+const { fetchPages, pageUpdates } = require('./fetch');
+const { AIRTABLE_FIELDS, AIRTABLE_CURATION_STATUS, AIRTABLE_COLLABORATOR_FIELDS } = require('./enums');
 const secure = require('../../secure.json');
 
+
 Airtable.configure({ apiKey: secure.airtable.apiKey });
-const table = Airtable.base(secure.airtable.base)(secure.airtable.tables.ideas);
+const ideasTable = Airtable.base(secure.airtable.base)(secure.airtable.tables.ideas);
+const collaboratorsTable = Airtable.base(secure.airtable.collaboratorBase)(secure.airtable.tables.collaborators);
 
 function chunkArray(arr, chunkSize) {
 	const groups = [];
@@ -43,7 +45,7 @@ async function upsertAirtableIdea({
 	};
 
 	// no support for upsert in airtable, so we first do a lookup to see if the record exists:
-	const existingRecords = await fetchPages(table.select({
+	const existingRecords = await fetchPages(ideasTable.select({
 		maxRecords: 1,
 		fields: [],
 		filterByFormula: `{${AIRTABLE_FIELDS.IDEA_NUMBER}} = "${ideaNumber}"`,
@@ -51,12 +53,12 @@ async function upsertAirtableIdea({
 
 	await new Promise((resolve, reject) => {
 		if (existingRecords.length > 0) {
-			table.update([{
+			ideasTable.update([{
 				id: existingRecords[0].getId(),
 				fields: updateData,
 			}], { typecast: true }, (err, res) => err ? reject(JSON.stringify(err)) : resolve(res));
 		} else {
-			table.create([{ fields: insertData }], { typecast: true }, (err, res) => err ? reject(JSON.stringify(err)) : resolve(res));
+			ideasTable.create([{ fields: insertData }], { typecast: true }, (err, res) => err ? reject(JSON.stringify(err)) : resolve(res));
 		}
 	});
 }
@@ -77,17 +79,17 @@ async function getCuratedIdeasForCategory({ issueCategory, onlyNew }) {
 		)
 	)`;
 
-	return fetchPages(table.select({ filterByFormula }));
+	return fetchPages(ideasTable.select({ filterByFormula }));
 }
 
 async function renameIssueCategory({ oldName, newName }) {
-	const oldRecords = await fetchPages(table.select({
+	const oldRecords = await fetchPages(ideasTable.select({
 		fields: [],
 		filterByFormula: `{${AIRTABLE_FIELDS.ISSUE_CATEGORY}} = "${oldName}"`,
 	}));
 
 	return chunkArray(oldRecords, 10).map(async (chunk) => {
-		return table.update(chunk.map((r) => ({
+		return ideasTable.update(chunk.map((r) => ({
 			id: r.id,
 			fields: { [AIRTABLE_FIELDS.ISSUE_CATEGORY]: newName },
 		})), { typecast: true });
@@ -95,7 +97,7 @@ async function renameIssueCategory({ oldName, newName }) {
 }
 
 async function airtableGetIdeasAndCategories() {
-	const result = await fetchPages(table.select({
+	const result = await fetchPages(ideasTable.select({
 		fields: [AIRTABLE_FIELDS.IDEA_NUMBER, AIRTABLE_FIELDS.ISSUE_CATEGORY],
 	}));
 
@@ -107,10 +109,15 @@ async function airtableGetIdeasAndCategories() {
 }
 
 module.exports = {
+	ideasTable,
+	collaboratorsTable,
 	upsertAirtableIdea,
 	getCuratedIdeasForCategory,
 	renameIssueCategory,
 	airtableGetIdeasAndCategories,
+	fetchPages,
+	pageUpdates,
 	AIRTABLE_CURATION_STATUS,
+	AIRTABLE_COLLABORATOR_FIELDS,
 	AIRTABLE_FIELDS,
 };
