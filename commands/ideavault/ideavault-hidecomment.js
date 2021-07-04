@@ -1,5 +1,5 @@
 const { Command } = require('discord.js-commando');
-const ideaVault = require('../../utils/models/idea-vault.js');
+const ideaVault = require('../../models/idea-vault.js');
 const secure = require('../../secure.json');
 
 module.exports = class CommentCommand extends Command {
@@ -39,14 +39,14 @@ module.exports = class CommentCommand extends Command {
 		if (!idea || idea.guild !== msg.guild.id) return msg.say('I couldn\'t find that idea, sorry!');
 
 		const comment = await ideaVault.toggleCommentVisibility(id, user.id).catch(e => {
-            msg.say(e.message)
-        });
-        if (!comment) return;
+			msg.say(e.message);
+		});
+		if (!comment) return;
 
 		const post = await msg.guild.channels.cache.get(idea.post_channel).messages.fetch(idea.post);
 		const embed = post.embeds[0];
-        
-        const commenterName = (await msg.guild.members.fetch(user)).displayName;
+
+		const commenterName = (await msg.guild.members.fetch(user)).displayName;
 
 		const index = embed.fields.indexOf(embed.fields.find(item => item.name === '💬 Comment from ' + commenterName));
 

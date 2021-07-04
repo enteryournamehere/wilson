@@ -1,5 +1,5 @@
 const commando = require('discord.js-commando');
-const updates = require('../../utils/models/updates.js');
+const updates = require('../../models/updates.js');
 
 module.exports = class FetchCommand extends commando.Command {
 	constructor(client) {

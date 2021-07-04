@@ -1,5 +1,5 @@
 const { Command } = require('discord.js-commando');
-const ideaVault = require('../../utils/models/idea-vault.js');
+const ideaVault = require('../../models/idea-vault.js');
 
 module.exports = class IdeaVaultCommand extends Command {
 	constructor(client) {
