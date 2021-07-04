@@ -1,7 +1,5 @@
 const Sequelize = require('sequelize');
-const Database = require('../../utils/database.js');
-
-const db = Database.db;
+const { db } = require('../utils/database.js');
 
 const mentionaccess = db.define('mentionaccess', {
 	fromrole: {

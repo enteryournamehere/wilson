@@ -1,7 +1,7 @@
 module.exports = {
     "extends": "./node_modules/eslint-config-google/index.js",
     "parserOptions": {
-        "ecmaVersion": 2017
+        "ecmaVersion": 2020
     },
     "env": {
         "node": true,

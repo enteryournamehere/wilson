@@ -20,7 +20,7 @@ async function upsertAirtableIdea({
 	bulbCount,
 	postDateTime,
 	postedBy,
-  postedById,
+	postedById,
 	postText,
 	postImageUrls,
 	originalMessageLink,
@@ -30,7 +30,7 @@ async function upsertAirtableIdea({
 		[AIRTABLE_FIELDS.NUMBER_OF_BULBS]: bulbCount,
 		[AIRTABLE_FIELDS.POST_DATE_TIME]: postDateTime.toISOString(),
 		[AIRTABLE_FIELDS.POSTED_BY]: postedBy,
-    [AIRTABLE_FIELDS.POSTED_BY_TAG]: `<@${postedById}>`,
+		[AIRTABLE_FIELDS.POSTED_BY_TAG]: `<@${postedById}>`,
 		[AIRTABLE_FIELDS.POST_TEXT]: postText,
 		[AIRTABLE_FIELDS.ORIGINAL_MESSAGE_LINK]: originalMessageLink,
 	};
@@ -42,29 +42,29 @@ async function upsertAirtableIdea({
 		[AIRTABLE_FIELDS.GLORY_IMAGE]: postImageUrls.map((url) => ({ url })), // Would need to track Airtable IDs to update
 	};
 
-  // no support for upsert in airtable, so we first do a lookup to see if the record exists:
-  const existingRecords = await fetchPages(table.select({
-    maxRecords: 1,
-    fields: [],
-    filterByFormula: `{${AIRTABLE_FIELDS.IDEA_NUMBER}} = "${ideaNumber}"`,
-  }));
+	// no support for upsert in airtable, so we first do a lookup to see if the record exists:
+	const existingRecords = await fetchPages(table.select({
+		maxRecords: 1,
+		fields: [],
+		filterByFormula: `{${AIRTABLE_FIELDS.IDEA_NUMBER}} = "${ideaNumber}"`,
+	}));
 
-  await new Promise((resolve, reject) => {
-    if (existingRecords.length > 0) {
-      table.update([{
-        id: existingRecords[0].getId(),
-        fields: updateData,
-      }], { typecast: true }, (err, res) => err ? reject(JSON.stringify(err)) : resolve(res));
-    } else {
-      table.create([{ fields: insertData }], { typecast: true }, (err, res) => err ? reject(JSON.stringify(err)) : resolve(res));
-    }
-  })
+	await new Promise((resolve, reject) => {
+		if (existingRecords.length > 0) {
+			table.update([{
+				id: existingRecords[0].getId(),
+				fields: updateData,
+			}], { typecast: true }, (err, res) => err ? reject(JSON.stringify(err)) : resolve(res));
+		} else {
+			table.create([{ fields: insertData }], { typecast: true }, (err, res) => err ? reject(JSON.stringify(err)) : resolve(res));
+		}
+	});
 }
 
 async function getCuratedIdeasForCategory({ issueCategory, onlyNew }) {
-	const issueCategoryFormula = issueCategory
-		? `FIND("${issueCategory}", {${AIRTABLE_FIELDS.ISSUE_CATEGORY}}),`
-		: '';
+	const issueCategoryFormula = issueCategory ?
+		`FIND("${issueCategory}", {${AIRTABLE_FIELDS.ISSUE_CATEGORY}}),` :
+		'';
 
 	const filterByFormula = `AND(
 		${issueCategoryFormula}
