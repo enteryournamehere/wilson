@@ -9,6 +9,7 @@ const Wilson = new Commando.Client({
 	messageCacheMaxSize: 50,
 	disabledEvents: ['TYPING_START'],
 	partials: ['MESSAGE', 'REACTION'],
+	ws: { intents: ['GUILD_MEMBERS']},
 });
 
 async function findMessageChannel(guildId, messageId) {

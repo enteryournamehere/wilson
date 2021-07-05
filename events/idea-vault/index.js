@@ -52,6 +52,7 @@ async function messageReactionRemove(reaction, _user) {
 
 async function updateIdeaCategory(message, channel) {
 	// Rebuild the footer, this trick means we don't need to fetch the reaction count
+	if (!message.embeds[0]?.footer) return;
 	const infos = message.embeds[0].footer.split('|');
 	infos[2] = ` Category: ${channel.name}`;
 

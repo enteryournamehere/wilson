@@ -3,3 +3,6 @@
 ALTER TABLE ideas ADD tagged_channel varchar(25);
 ALTER TABLE ideas ADD message_channel varchar(25);
 ALTER TABLE ideas ADD airtable_updated BOOLEAN NOT NULL DEFAULT FALSE;
+
+// 05-Jul-2021 @tylermenezes
+CREATE TABLE collaborator_roles(id VARCHAR(25) NOT NULL, PRIMARY KEY (id));

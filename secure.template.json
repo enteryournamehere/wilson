@@ -28,11 +28,7 @@
       "tables": {
         "ideas": "literal table name",
         "collaborators": "from the collaborators base"
-      },
-      "collaboratorSyncRoles": [
-        { "name": "MMX Contributor" },
-        { "id": "649189529231556609" }
-      ]
+      }
     },
     "webhooks": {
       "youtube": "discord webhook link",

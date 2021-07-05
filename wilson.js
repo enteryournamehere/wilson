@@ -6,6 +6,7 @@ const updates = require('./models/updates.js');
 const { Wilson } = require('./utils/wilson');
 const translation = require('./events/translation.js');
 const ideaVault = require('./events/idea-vault');
+const collaborators = require('./events/collaborators');
 const Webhook = require('./utils/webhook.js');
 
 Wilson.registry
@@ -15,6 +16,7 @@ Wilson.registry
 		['ideavault', 'Idea vault commands'],
 		['mod', 'Mod commands'],
 		['owner', 'Owner commands'],
+		['collaborators', 'Collaborator commands'],
 	])
 	.registerDefaultTypes()
 	.registerDefaultGroups()
@@ -26,7 +28,11 @@ Wilson.registry
 	.registerCommandsIn(path.join(__dirname, 'commands'));
 
 
-Wilson.on('ready', () => {
+Wilson.on('ready', async () => {
+	const guild = await Wilson.guilds.fetch(secure.updateguild);
+	// If this isn't run at least once, some Discord.js commands don't work or throw exceptions.
+	await guild.roles.fetch();
+	await guild.members.fetch();
 	console.log(`{green}Ready!`);
 });
 
@@ -48,6 +54,9 @@ Wilson.on('messageReactionAdd', ideaVault.messageReactionAdd);
 Wilson.on('messageReactionRemove', ideaVault.messageReactionRemove);
 Wilson.on('messageUpdate', ideaVault.messageUpdate);
 Wilson.on('ready', ideaVault.readyFactory(Wilson));
+
+// subscribe the collaborators events
+Wilson.on('guildMemberUpdate', collaborators.guildMemberUpdate);
 
 
 Wilson.dispatcher.addInhibitor(msg => {

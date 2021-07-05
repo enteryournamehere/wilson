@@ -1,11 +1,13 @@
 const secure = require('../secure.json');
 const { Wilson } = require('../utils/wilson');
+const { getCollaboratorRoles } = require('../models/collaborator-role');
 const { collaboratorsTable, fetchPages, pageUpdates, AIRTABLE_COLLABORATOR_FIELDS } = require('../utils/airtable');
 
-const filterIds = secure.airtable.collaboratorSyncRoles.map((r) => r.id).filter(Boolean);
-const filterNames = secure.airtable.collaboratorSyncRoles.map((r) => r.name).filter(Boolean);
 
 Wilson.on('ready', async () => {
+	// Fetch collaborator roles we're tracking
+	const collaboratorRoles = await getCollaboratorRoles();
+
 	// Fetch all members from Discord
 	const guild = await Wilson.guilds.fetch(secure.updateguild);
 	await guild.members.fetch();
@@ -26,7 +28,7 @@ Wilson.on('ready', async () => {
 		id: collaboratorIds[m.user.id],
 		fields: {
 			[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ROLES]: m.roles.cache
-				.filter((r) => filterNames.includes(r.name) || filterIds.includes(r.id))
+				.filter((r) => collaboratorRoles.includes(r.id))
 				.map((r) => r.name),
 			[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_HANDLE]: `${m.user.tag}`,
 			[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ID]: m.user.id,
