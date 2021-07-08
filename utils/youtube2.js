@@ -1,6 +1,6 @@
 const secure = require('../secure.json');
 const rp = require('request-promise-native');
-const updates = require('./models/updates.js');
+const updates = require('../models/updates.js');
 
 const options = {
 	method: 'GET',
