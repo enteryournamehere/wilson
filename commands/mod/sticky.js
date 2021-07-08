@@ -1,6 +1,5 @@
 const commando = require('discord.js-commando');
-const mentionaccess = require('../../utils/models/mentionaccess.js');
-const sticky = require('../../utils/models/sticky.js');
+const sticky = require('../../models/sticky.js');
 
 module.exports = class StickyCommand extends commando.Command {
 	constructor(client) {

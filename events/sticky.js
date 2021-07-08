@@ -1,4 +1,4 @@
-const sticky = require('../utils/models/sticky.js');
+const sticky = require('../models/sticky.js');
 const secure = require('../secure.json');
 
 module.exports = async (msg) => {
