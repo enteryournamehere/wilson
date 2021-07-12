@@ -9,6 +9,7 @@ const ideaVault = require('./events/idea-vault');
 const collaborators = require('./events/collaborators');
 const Webhook = require('./utils/webhook.js');
 
+Wilson.on('debug', console.log);
 Wilson.registry
 	.registerGroups([
 		['config', 'Config commands'],

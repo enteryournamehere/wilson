@@ -52,25 +52,25 @@ module.exports = class IdeaVaultTierCommand extends Command {
 				}
 				break;
 			case 'track':
-				await trackCollaborators(role.id);
 				await syncRolesForMembers(role.members.map((m) => ({
 					discordId: m.user.id,
 					discordHandle: m.user.tag,
-					roles: m.user.roles
+					discordRoles: m.roles.cache
 						.filter((r) => collaboratorRoles.includes(r.id) || r.id === role.id)
 						.map((r) => r.name),
 				})));
+				await trackCollaborators(role.id);
 				await msg.say(`Tracked <@&${role.id}>`, { allowedMentions: { roles: [] }});
 				break;
 			case 'untrack':
-				await untrackCollaborators(role.id);
 				await syncRolesForMembers(role.members.map((m) => ({
 					discordId: m.user.id,
 					discordHandle: m.user.tag,
-					roles: m.user.roles
+					discordRoles: m.roles.cache
 						.filter((r) => collaboratorRoles.includes(r.id) && r.id !== role.id)
 						.map((r) => r.name),
 				})));
+				await untrackCollaborators(role.id);
 				await msg.say(`Stopped tracking <@&${role.id}>`, { allowedMentions: { roles: [] }});
 				break;
 		}

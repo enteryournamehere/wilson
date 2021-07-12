@@ -30,7 +30,7 @@ async function guildRoleUpdate(oldRole, newRole) {
 	syncRolesForMembers(newRole.members.map((m) => ({
 		discordId: m.user.id,
 		discordHandle: m.user.tag,
-		roles: m.user.roles
+		discordRoles: m.roles.cache
 			.filter((r) => collaboratorRoles.includes(r.id))
 			.map((r) => r.name),
 	})));
@@ -45,7 +45,7 @@ async function guildRoleDelete(oldRole) {
 	syncRolesForMembers(oldRole.members.map((m) => ({
 		discordId: m.user.id,
 		discordHandle: m.user.tag,
-		roles: m.user.roles
+		discordRoles: m.roles.cache
 			.filter((r) => collaboratorRoles.includes(r.id))
 			.map((r) => r.name),
 	})));

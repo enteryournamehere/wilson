@@ -156,7 +156,7 @@ async function syncRolesForMembers(members) {
 			[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_HANDLE]: discordHandle,
 			[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ID]: discordId,
 		},
-	})).filter((u) => u.fields[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ROLES].length > 0);
+	}));
 
 	const updates = upserts.filter(({ id }) => id);
 	const inserts = upserts.filter(({ id }) => !id)
