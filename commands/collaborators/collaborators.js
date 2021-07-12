@@ -1,5 +1,6 @@
 const { Command } = require('discord.js-commando');
 const { getCollaboratorRoles, trackCollaborators, untrackCollaborators } = require('../../models/collaborator-role.js');
+const { syncRolesForMembers } = require('../../utils/airtable');
 
 module.exports = class IdeaVaultTierCommand extends Command {
 	constructor(client) {
@@ -36,6 +37,7 @@ module.exports = class IdeaVaultTierCommand extends Command {
 	}
 
 	async run(msg, {action, role}) {
+		const collaboratorRoles = await getCollaboratorRoles();
 		switch (action) {
 			case '': // Do nothing. We want the code below to execute.
 			case 'list':
@@ -51,10 +53,24 @@ module.exports = class IdeaVaultTierCommand extends Command {
 				break;
 			case 'track':
 				await trackCollaborators(role.id);
+				await syncRolesForMembers(role.members.map((m) => ({
+					discordId: m.user.id,
+					discordHandle: m.user.tag,
+					roles: m.user.roles
+						.filter((r) => collaboratorRoles.includes(r.id) || r.id === role.id)
+						.map((r) => r.name),
+				})));
 				await msg.say(`Tracked <@&${role.id}>`, { allowedMentions: { roles: [] }});
 				break;
 			case 'untrack':
 				await untrackCollaborators(role.id);
+				await syncRolesForMembers(role.members.map((m) => ({
+					discordId: m.user.id,
+					discordHandle: m.user.tag,
+					roles: m.user.roles
+						.filter((r) => collaboratorRoles.includes(r.id) && r.id !== role.id)
+						.map((r) => r.name),
+				})));
 				await msg.say(`Stopped tracking <@&${role.id}>`, { allowedMentions: { roles: [] }});
 				break;
 		}

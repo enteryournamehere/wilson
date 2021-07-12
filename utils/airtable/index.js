@@ -108,6 +108,68 @@ async function airtableGetIdeasAndCategories() {
 		}), {});
 }
 
+async function syncRolesForMember(discordId, discordHandle, discordRoles) {
+	console.log(`Updating roles for ${discordHandle} in Airtable.`);
+
+	// This is implemented seprataely from syncRolesForMembers so that we can fetch only a record instead of the table
+	const toUpdateAirtable = await fetchPages(collaboratorsTable.select({
+		fields: [AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ID],
+		filterByFormula: `{${AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ID}} = "${discordId}"`,
+	}));
+
+	const fields = {
+		[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ROLES]: discordRoles,
+		[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_HANDLE]: discordHandle,
+		[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ID]: discordId,
+	};
+
+	if (toUpdateAirtable.length > 0) {
+		await collaboratorsTable.update(
+			[{ id: toUpdateAirtable[0].id, fields }],
+			{ typecast: true },
+		);
+	} else if (discordRoles.length > 0) {
+		await collaboratorsTable.create(
+			[{ fields }],
+			{ typecast: true },
+		);
+	} else console.log(`... did not insert a new member with 0 roles.`); // This shouldn't happen.
+}
+
+async function syncRolesForMembers(members) {
+	// Fetch all existing collaborators in Airtable
+	const collaborators = await fetchPages(collaboratorsTable.select({
+		fields: [AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ID],
+	}));
+
+	// Generate k=>v map of Discord ID => Airtable ID
+	const collaboratorIds = collaborators.reduce((accum, rec) => ({
+		[rec.fields[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ID]]: rec.id,
+		...accum,
+	}), {});
+
+	// Map into Airtable updates/inserts
+	const upserts = members.map(({ discordId, discordHandle, discordRoles }) => ({
+		id: collaboratorIds[discordId],
+		fields: {
+			[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ROLES]: discordRoles,
+			[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_HANDLE]: discordHandle,
+			[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ID]: discordId,
+		},
+	})).filter((u) => u.fields[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ROLES].length > 0);
+
+	const updates = upserts.filter(({ id }) => id);
+	const inserts = upserts.filter(({ id }) => !id)
+		.map(({ fields }) => ({ fields }))
+		.filter(({ fields }) => fields[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ROLES].length > 0);
+
+	// Run updates/inserts
+	console.log(`Updating roles for ${updates.length} members in Airtable.`);
+	await pageUpdates(updates, (u) => collaboratorsTable.update(u, { typecast: true }));
+	console.log(`Inserting roles for ${inserts.length} members in Airtable.`);
+	await pageUpdates(inserts, (i) => collaboratorsTable.create(i, { typecast: true }));
+}
+
 module.exports = {
 	ideasTable,
 	collaboratorsTable,
@@ -117,6 +179,8 @@ module.exports = {
 	airtableGetIdeasAndCategories,
 	fetchPages,
 	pageUpdates,
+	syncRolesForMember,
+	syncRolesForMembers,
 	AIRTABLE_CURATION_STATUS,
 	AIRTABLE_COLLABORATOR_FIELDS,
 	AIRTABLE_FIELDS,

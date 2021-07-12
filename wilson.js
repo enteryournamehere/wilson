@@ -57,6 +57,8 @@ Wilson.on('ready', ideaVault.readyFactory(Wilson));
 
 // subscribe the collaborators events
 Wilson.on('guildMemberUpdate', collaborators.guildMemberUpdate);
+Wilson.on('roleUpdate', collaborators.guildRoleUpdate);
+Wilson.on('roleDelete', collaborators.guildRoleDelete);
 
 
 Wilson.dispatcher.addInhibitor(msg => {

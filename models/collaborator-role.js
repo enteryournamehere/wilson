@@ -28,6 +28,11 @@ async function getCollaboratorRoles() {
 	return _collaboratorRoles;
 }
 
+async function filterCollaboratorRoles(discordRoles) {
+	const collaboratorRoles = await getCollaboratorRoles();
+	return discordRoles.filter((r) => collaboratorRoles.includes(r.id));
+}
+
 async function trackCollaborators(id) {
 	if (_collaboratorRoles) _collaboratorRoles.push(id);
 	return collaboratorRole.upsert({
@@ -47,6 +52,7 @@ async function untrackCollaborators(id) {
 module.exports = {
 	collaboratorRole,
 	getCollaboratorRoles,
+	filterCollaboratorRoles,
 	trackCollaborators,
 	untrackCollaborators,
 };
