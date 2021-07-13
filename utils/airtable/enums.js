@@ -16,6 +16,12 @@ const AIRTABLE_FIELDS = {
 	CURATION_STATUS: 'Curation',
 };
 
+const AIRTABLE_COLLABORATOR_FIELDS = {
+	DISCORD_HANDLE: 'Discord ID',
+	DISCORD_ID: 'Discord Numeric ID',
+	DISCORD_ROLES: 'Discord Roles',
+};
+
 // These will probably be static, but it's annoying to type the emoji each time.
 const AIRTABLE_CURATION_STATUS = {
 	CHOSEN_FOR_CURATION: '🥇 Chosen for Curation',
@@ -26,4 +32,5 @@ const AIRTABLE_CURATION_STATUS = {
 module.exports = {
 	AIRTABLE_FIELDS,
 	AIRTABLE_CURATION_STATUS,
+	AIRTABLE_COLLABORATOR_FIELDS,
 };

@@ -1,10 +1,12 @@
 const Airtable = require('airtable');
-const { fetchPages } = require('./fetch');
-const { AIRTABLE_FIELDS, AIRTABLE_CURATION_STATUS } = require('./enums');
+const { fetchPages, pageUpdates } = require('./fetch');
+const { AIRTABLE_FIELDS, AIRTABLE_CURATION_STATUS, AIRTABLE_COLLABORATOR_FIELDS } = require('./enums');
 const secure = require('../../secure.json');
 
+
 Airtable.configure({ apiKey: secure.airtable.apiKey });
-const table = Airtable.base(secure.airtable.base)(secure.airtable.tables.ideas);
+const ideasTable = Airtable.base(secure.airtable.base)(secure.airtable.tables.ideas);
+const collaboratorsTable = Airtable.base(secure.airtable.collaboratorBase)(secure.airtable.tables.collaborators);
 
 function chunkArray(arr, chunkSize) {
 	const groups = [];
@@ -43,7 +45,7 @@ async function upsertAirtableIdea({
 	};
 
 	// no support for upsert in airtable, so we first do a lookup to see if the record exists:
-	const existingRecords = await fetchPages(table.select({
+	const existingRecords = await fetchPages(ideasTable.select({
 		maxRecords: 1,
 		fields: [],
 		filterByFormula: `{${AIRTABLE_FIELDS.IDEA_NUMBER}} = "${ideaNumber}"`,
@@ -51,12 +53,12 @@ async function upsertAirtableIdea({
 
 	await new Promise((resolve, reject) => {
 		if (existingRecords.length > 0) {
-			table.update([{
+			ideasTable.update([{
 				id: existingRecords[0].getId(),
 				fields: updateData,
 			}], { typecast: true }, (err, res) => err ? reject(JSON.stringify(err)) : resolve(res));
 		} else {
-			table.create([{ fields: insertData }], { typecast: true }, (err, res) => err ? reject(JSON.stringify(err)) : resolve(res));
+			ideasTable.create([{ fields: insertData }], { typecast: true }, (err, res) => err ? reject(JSON.stringify(err)) : resolve(res));
 		}
 	});
 }
@@ -77,17 +79,17 @@ async function getCuratedIdeasForCategory({ issueCategory, onlyNew }) {
 		)
 	)`;
 
-	return fetchPages(table.select({ filterByFormula }));
+	return fetchPages(ideasTable.select({ filterByFormula }));
 }
 
 async function renameIssueCategory({ oldName, newName }) {
-	const oldRecords = await fetchPages(table.select({
+	const oldRecords = await fetchPages(ideasTable.select({
 		fields: [],
 		filterByFormula: `{${AIRTABLE_FIELDS.ISSUE_CATEGORY}} = "${oldName}"`,
 	}));
 
 	return chunkArray(oldRecords, 10).map(async (chunk) => {
-		return table.update(chunk.map((r) => ({
+		return ideasTable.update(chunk.map((r) => ({
 			id: r.id,
 			fields: { [AIRTABLE_FIELDS.ISSUE_CATEGORY]: newName },
 		})), { typecast: true });
@@ -95,7 +97,7 @@ async function renameIssueCategory({ oldName, newName }) {
 }
 
 async function airtableGetIdeasAndCategories() {
-	const result = await fetchPages(table.select({
+	const result = await fetchPages(ideasTable.select({
 		fields: [AIRTABLE_FIELDS.IDEA_NUMBER, AIRTABLE_FIELDS.ISSUE_CATEGORY],
 	}));
 
@@ -106,11 +108,80 @@ async function airtableGetIdeasAndCategories() {
 		}), {});
 }
 
+async function syncRolesForMember(discordId, discordHandle, discordRoles) {
+	console.log(`Updating roles for ${discordHandle} in Airtable.`);
+
+	// This is implemented seprataely from syncRolesForMembers so that we can fetch only a record instead of the table
+	const toUpdateAirtable = await fetchPages(collaboratorsTable.select({
+		fields: [AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ID],
+		filterByFormula: `{${AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ID}} = "${discordId}"`,
+	}));
+
+	const fields = {
+		[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ROLES]: discordRoles,
+		[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_HANDLE]: discordHandle,
+		[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ID]: discordId,
+	};
+
+	if (toUpdateAirtable.length > 0) {
+		await collaboratorsTable.update(
+			[{ id: toUpdateAirtable[0].id, fields }],
+			{ typecast: true },
+		);
+	} else if (discordRoles.length > 0) {
+		await collaboratorsTable.create(
+			[{ fields }],
+			{ typecast: true },
+		);
+	} else console.log(`... did not insert a new member with 0 roles.`); // This shouldn't happen.
+}
+
+async function syncRolesForMembers(members) {
+	// Fetch all existing collaborators in Airtable
+	const collaborators = await fetchPages(collaboratorsTable.select({
+		fields: [AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ID],
+	}));
+
+	// Generate k=>v map of Discord ID => Airtable ID
+	const collaboratorIds = collaborators.reduce((accum, rec) => ({
+		[rec.fields[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ID]]: rec.id,
+		...accum,
+	}), {});
+
+	// Map into Airtable updates/inserts
+	const upserts = members.map(({ discordId, discordHandle, discordRoles }) => ({
+		id: collaboratorIds[discordId],
+		fields: {
+			[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ROLES]: discordRoles,
+			[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_HANDLE]: discordHandle,
+			[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ID]: discordId,
+		},
+	}));
+
+	const updates = upserts.filter(({ id }) => id);
+	const inserts = upserts.filter(({ id }) => !id)
+		.map(({ fields }) => ({ fields }))
+		.filter(({ fields }) => fields[AIRTABLE_COLLABORATOR_FIELDS.DISCORD_ROLES].length > 0);
+
+	// Run updates/inserts
+	console.log(`Updating roles for ${updates.length} members in Airtable.`);
+	await pageUpdates(updates, (u) => collaboratorsTable.update(u, { typecast: true }));
+	console.log(`Inserting roles for ${inserts.length} members in Airtable.`);
+	await pageUpdates(inserts, (i) => collaboratorsTable.create(i, { typecast: true }));
+}
+
 module.exports = {
+	ideasTable,
+	collaboratorsTable,
 	upsertAirtableIdea,
 	getCuratedIdeasForCategory,
 	renameIssueCategory,
 	airtableGetIdeasAndCategories,
+	fetchPages,
+	pageUpdates,
+	syncRolesForMember,
+	syncRolesForMembers,
 	AIRTABLE_CURATION_STATUS,
+	AIRTABLE_COLLABORATOR_FIELDS,
 	AIRTABLE_FIELDS,
 };

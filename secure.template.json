@@ -23,9 +23,11 @@
     },
     "airtable": {
       "base": "string starting with app in url",
+      "collaboratorBase": "same as above but for collaborators",
       "apiKey": "from account page",
       "tables": {
-        "ideas": "literal table name"
+        "ideas": "literal table name",
+        "collaborators": "from the collaborators base"
       }
     },
     "webhooks": {
