@@ -1,6 +1,11 @@
 const { Message } = require("discord.js");
 
-const test = /(?!discord(?:(?:(?:app|status)\.com)|\.))\b(?<website>[\p{L}\p{Pd}]*d[il][sck]{1,2}[orc]{1,3}i?(?:d|cl)[\p{L}\p{P}]*)\.(?<domain>\w{2,4})/gui;
+const scamRegex = new RegExp(
+  /(?!discord(?:(?:(?:app|status)\.com)|\.))/.source + // ignore real links
+  /\b(?<website>[\p{L}\p{Pd}]*d[il][sck]{1,2}[orc]{1,3}i?(?:d|cl)[\p{L}\p{P}]*)/.source + // match anything thats similar to 'discord'
+  /\.(?<domain>\w{2,4})/.source, // match the domain of the link
+  'gui'
+);
 
 const excludedRoles = [
   '649189529231556609', // Mod team 
@@ -19,9 +24,7 @@ module.exports = async message => {
   // Exclude staff members from filter
   if (message.member.roles.cache.some(role => excludedRoles.includes(role))) return;
 
-  // If message contains scam link
-  if (message.content.match(test)) {
-    // Delete message
+  if (message.content.match(scamRegex)) {
     message.delete();
 
     // Mute member
