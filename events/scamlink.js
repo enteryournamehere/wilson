@@ -13,11 +13,6 @@ const excludedRoles = [
   '650703325611950096'  // Wintergatan
 ];
 
-/**
- * 
- * @param {Message} message 
- * @returns 
- */
 module.exports = async message => {
   if (message.author.bot) return;
 
