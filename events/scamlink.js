@@ -1,7 +1,7 @@
 const scamRegex = new RegExp(
-  /(?!discord(?:(?:(?:app|status)\.com)|\.))/.source + // ignore real links
-  /\b(?<website>[\p{L}\p{Pd}]*d[il][sck]{1,2}[orc]{1,3}i?(?:d|cl)[\p{L}\p{P}]*)/.source + // match anything thats similar to 'discord'
-  /\.(?<domain>\w{2,4})/.source, // match the domain of the link
+  '(?!discord(?:app|status)?\\.com)' + // ignore real links
+  '\\b(?<website>[\\p{L}\\p{Pd}]*d[il][sck]{1,2}[orc]{1,3}i?(?:d|cl)[\\p{L}\\p{P}]*)' + // match anything thats similar to 'discord'
+  '\\.(?<domain>\\w{2,4})', // match the domain of the link
   'gui'
 );
 
