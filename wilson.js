@@ -8,10 +8,10 @@ const translation = require('./events/translation.js');
 const sticky = require('./events/sticky.js');
 const ideaVault = require('./events/idea-vault');
 const scamlink = require('./events/scamlink');
+const spamdetect = require('./events/spamdetect');
 const collaborators = require('./events/collaborators');
 const Webhook = require('./utils/webhook.js');
 
-Wilson.on('debug', console.log);
 Wilson.registry
 	.registerGroups([
 		['config', 'Config commands'],
@@ -52,6 +52,7 @@ Wilson.setProvider(new SequelizeProvider(database.db)).catch(console.error);
 Wilson.on('message', translation);
 Wilson.on('message', sticky);
 Wilson.on('message', scamlink);
+Wilson.on('message', spamdetect);
 
 // subscribe the idea vault's events
 Wilson.on('channelUpdate', ideaVault.channelUpdate);
