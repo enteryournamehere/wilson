@@ -15,7 +15,7 @@ module.exports = async message => {
   if (message.author.bot) return;
 
   // Exclude staff members from filter
-  if (message.member.roles.cache.some(role => excludedRoles.includes(role))) return;
+  if (message.member.roles.cache.some(role => excludedRoles.includes(role.id))) return;
 
   if (message.content.match(scamRegex)) {
     message.delete().catch(console.error);
