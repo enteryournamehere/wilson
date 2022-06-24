@@ -20,7 +20,7 @@
     "ffmpeg-binaries": "^3.2.2-3",
     "insta-scraper": "^1.0.2",
     "iso-639-1": "^2.1.7",
-    "jsdom": "^11.11.0",
+    "jsdom": "^16.5.0",
     "mysql2": "^1.7.0",
     "optionator": "^0.9.1",
     "package.json": "^2.0.1",
