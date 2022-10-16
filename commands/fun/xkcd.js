@@ -68,18 +68,18 @@ module.exports = class XkcdCommand extends commando.Command {
 		return await this.fetchComicByID(randomComicID);
 	}
 
-	fetchComic(arg) {
-		if (arg === "latest") {
+	fetchComic(id) {
+		if (id === "latest") {
 			return this.fetchLatestComic();
-		} else if (arg) {
-			return this.fetchComicByID(arg);
+		} else if (id) {
+			return this.fetchComicByID(id);
 		} else {
 			return this.fetchRandomComic();
 		}
 	}
 
-	async run(msg, {arg}) {
-		this.fetchComic(arg).then((a) => {
+	async run(msg, {id}) {
+		this.fetchComic(id).then((a) => {
 			if (a.error) return msg.say(a.error);
 			const embed = new MessageEmbed()
 				.setTitle(a.title)
