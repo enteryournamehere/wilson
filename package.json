@@ -27,7 +27,7 @@
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
     "request-promise-native": "^1.0.9",
-    "sequelize": "^5.22.3",
+    "sequelize": "^6.28.2",
     "sqlite": "^4.0.19",
     "twitter": "^1.7.1",
     "url": "^0.11.0",
