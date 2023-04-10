@@ -54,6 +54,7 @@ module.exports = {
 			'fr': '🇫🇷',
 			'es': '🇪🇸',
 			'pt': '🇵🇹',
+			'cy': '🏴󠁧󠁢󠁷󠁬󠁳󠁿',
 		};
 		if (hardcoded[language]) return hardcoded[language];
 		const countries = Object.entries(countriesList.countries)
