@@ -3,7 +3,7 @@ const secure = require('../secure.json');
 
 const TIMEOUT_S = 30;
 
-let debounce = null;
+let debounce = new Map();
 
 module.exports = async (msg) => {
 	if (msg.author.bot
@@ -14,17 +14,17 @@ module.exports = async (msg) => {
 	let dbRow = await sticky.getPost(msg.channel.id);
 	if (!dbRow) return;
 
-	if (debounce === null) {
+	if (!debounce.has(msg.channel.id)) {
 		await msg.channel.messages.fetch(dbRow.current_post)
 			.then(existing => existing.delete())
 			.catch(e => console.log(e));
 	} else {
-		clearTimeout(debounce);
+		clearTimeout(debounce.get(msg.channel.id));
 	}
-	debounce = setTimeout(() => {
-		debounce = null;
+	debounce.set(msg.channel.id, setTimeout(() => {
+		debounce.delete(msg.channel.id);
 		msg.channel.send(dbRow.text)
 			.then(new_msg => sticky.setPost(msg.channel.id, new_msg.id))
 			.catch(e => console.log(e));
-	}, TIMEOUT_S * 1000);
+	}, TIMEOUT_S * 1000));
 };
