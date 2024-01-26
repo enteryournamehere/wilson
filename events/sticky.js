@@ -23,7 +23,7 @@ module.exports = async (msg) => {
 	}
 	debounce = setTimeout(() => {
 		debounce = null;
-		await msg.channel.send(dbRow.text)
+		msg.channel.send(dbRow.text)
 			.then(new_msg => sticky.setPost(msg.channel.id, new_msg.id))
 			.catch(e => console.log(e));
 	}, TIMEOUT_S * 1000);
