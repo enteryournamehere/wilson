@@ -4,7 +4,7 @@ const updates = require('../models/updates.js');
 
 const options = {
 	method: 'GET',
-	uri: `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&maxResults=25&playlistId=UUcXhhVwCT6_WqjkEniejRJQ&key=${secure.youtube}`,
+	uri: `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&maxResults=25&playlistId=UULFcXhhVwCT6_WqjkEniejRJQ&key=${secure.youtube}`,
 	json: true,
 };
 
