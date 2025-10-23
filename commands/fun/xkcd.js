@@ -86,7 +86,7 @@ module.exports = class XkcdCommand extends commando.Command {
 				.setDescription(a.description)
 				.setImage(a.image)
 				.setFooter({
-					text: `#${a.id}`,
+					text: `xkcd ${a.id}`,
 				})
 				.setURL(a.url);
 			msg.say(embed);
