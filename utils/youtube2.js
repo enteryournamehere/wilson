@@ -16,25 +16,33 @@ module.exports.fetch = () => {
 				const latest = result.items[0];
 				let desc = latest.snippet.description;
 				desc = desc.split('———————————')[0];
-				resolve({
-					new: new Date(latest.snippet.publishedAt).getTime() > obj.time,
-					postid: latest.snippet.resourceId.videoId,
-					time: new Date(latest.snippet.publishedAt).getTime(),
-					embed: {
-						author: {
-							name: 'Wintergatan',
-							icon_url: 'https://yt3.ggpht.com/-BcuK88tIhwg/AAAAAAAAAAI/AAAAAAAAAAA/F_K192CLKUA/s288-mo-c-c0xffffffff-rj-k-no/photo.jpg',
-							url: 'https://www.youtube.com/user/wintergatan2000',
+				// check if the video is a short by using a HEAD request to check for a redirect to /watch
+				rp({
+					method: 'HEAD',
+					uri: `https://youtube.com/shorts/${videoId}`,
+					resolveWithFullResponse: true,
+				}).then((headRequest) => {
+					resolve({
+						new: new Date(latest.snippet.publishedAt).getTime() > obj.time,
+						postid: latest.snippet.resourceId.videoId,
+						time: new Date(latest.snippet.publishedAt).getTime(),
+						mainVideo: headRequest.request.uri.pathname === '/watch',
+						embed: {
+							author: {
+								name: 'Wintergatan',
+								icon_url: 'https://yt3.ggpht.com/-BcuK88tIhwg/AAAAAAAAAAI/AAAAAAAAAAA/F_K192CLKUA/s288-mo-c-c0xffffffff-rj-k-no/photo.jpg',
+								url: 'https://www.youtube.com/user/wintergatan2000',
+							},
+							description: (desc.length > 2048 ? desc.slice(0, 2047) + '…' : desc),
+							title: latest.snippet.title,
+							timestamp: latest.snippet.publishedAt,
+							color: '16711680',
+							thumbnail: {
+								url: latest.snippet.thumbnails.default.url,
+							},
+							url: 'https://youtube.com/watch?v=' + latest.snippet.resourceId.videoId,
 						},
-						description: (desc.length > 2048 ? desc.slice(0, 2047) + '…' : desc),
-						title: latest.snippet.title,
-						timestamp: latest.snippet.publishedAt,
-						color: '16711680',
-						thumbnail: {
-							url: latest.snippet.thumbnails.default.url,
-						},
-						url: 'https://youtube.com/watch?v=' + latest.snippet.resourceId.videoId,
-					},
+					});
 				});
 			});
 		});

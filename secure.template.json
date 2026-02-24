@@ -37,6 +37,7 @@
     },
     "roles": {
       "youtube": "role id",
+      "youtubeMainVideos": "role id",
       "twitter": "r o l e   i d",
       "instagram": "r  o  l  e     i  d"
     },
