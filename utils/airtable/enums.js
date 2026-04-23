@@ -5,7 +5,8 @@
 const AIRTABLE_FIELDS = {
 	IDEA_NUMBER: 'Idea #',
 	NUMBER_OF_BULBS: '# of bulbs',
-	ISSUE_CATEGORY: 'Issue Category',
+	ISSUE_CATEGORY: 'mmx Issue Category',
+	MM3_ISSUE_CATEGORY: 'MM3 Issue Category',
 	POST_DATE_TIME: 'Post Date / Time (GMT)',
 	POSTED_BY: 'Posted By',
 	POSTED_BY_TAG: 'Posted By Tag',

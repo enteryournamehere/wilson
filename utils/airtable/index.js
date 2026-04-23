@@ -28,6 +28,7 @@ async function upsertAirtableIdea({
 	originalMessageLink,
 	initialIssueCategory,
 }) {
+	return false
 	const updateData = { // Data which will be updated each time. (No reason to leave most things out of here.)
 		[AIRTABLE_FIELDS.NUMBER_OF_BULBS]: bulbCount,
 		[AIRTABLE_FIELDS.POST_DATE_TIME]: postDateTime.toISOString(),
@@ -39,7 +40,7 @@ async function upsertAirtableIdea({
 	const insertData = { // Data which will only be synchronized when first tracked
 		...updateData,
 		[AIRTABLE_FIELDS.IDEA_NUMBER]: ideaNumber,
-		[AIRTABLE_FIELDS.ISSUE_CATEGORY]: initialIssueCategory,
+		[AIRTABLE_FIELDS.MM3_ISSUE_CATEGORY]: initialIssueCategory,
 		[AIRTABLE_FIELDS.POST_IMAGES]: postImageUrls.map((url) => ({ url })), // Would need to track Airtable IDs to update
 		[AIRTABLE_FIELDS.GLORY_IMAGE]: postImageUrls.map((url) => ({ url })), // Would need to track Airtable IDs to update
 	};
@@ -65,7 +66,7 @@ async function upsertAirtableIdea({
 
 async function getCuratedIdeasForCategory({ issueCategory, onlyNew }) {
 	const issueCategoryFormula = issueCategory ?
-		`FIND("${issueCategory}", {${AIRTABLE_FIELDS.ISSUE_CATEGORY}}),` :
+		`FIND("${issueCategory}", {${AIRTABLE_FIELDS.MM3_ISSUE_CATEGORY}}),` :
 		'';
 
 	const filterByFormula = `AND(
@@ -85,26 +86,26 @@ async function getCuratedIdeasForCategory({ issueCategory, onlyNew }) {
 async function renameIssueCategory({ oldName, newName }) {
 	const oldRecords = await fetchPages(ideasTable.select({
 		fields: [],
-		filterByFormula: `{${AIRTABLE_FIELDS.ISSUE_CATEGORY}} = "${oldName}"`,
+		filterByFormula: `{${AIRTABLE_FIELDS.MM3_ISSUE_CATEGORY}} = "${oldName}"`,
 	}));
 
 	return chunkArray(oldRecords, 10).map(async (chunk) => {
 		return ideasTable.update(chunk.map((r) => ({
 			id: r.id,
-			fields: { [AIRTABLE_FIELDS.ISSUE_CATEGORY]: newName },
+			fields: { [AIRTABLE_FIELDS.MM3_ISSUE_CATEGORY]: newName },
 		})), { typecast: true });
 	});
 }
 
 async function airtableGetIdeasAndCategories() {
 	const result = await fetchPages(ideasTable.select({
-		fields: [AIRTABLE_FIELDS.IDEA_NUMBER, AIRTABLE_FIELDS.ISSUE_CATEGORY],
+		fields: [AIRTABLE_FIELDS.IDEA_NUMBER, AIRTABLE_FIELDS.MM3_ISSUE_CATEGORY],
 	}));
 
 	return result
 		.reduce((accum, { fields }) => ({
 			...accum,
-			[fields[AIRTABLE_FIELDS.IDEA_NUMBER]]: fields[AIRTABLE_FIELDS.ISSUE_CATEGORY],
+			[fields[AIRTABLE_FIELDS.IDEA_NUMBER]]: fields[AIRTABLE_FIELDS.MM3_ISSUE_CATEGORY],
 		}), {});
 }
 

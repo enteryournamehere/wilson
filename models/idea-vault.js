@@ -239,12 +239,16 @@ async function removeTier(channel_id) {
  * @param {string} channel_id - ID of channel to check for
  * @return {boolean}
  */
-function isAllowed(channel_id) {
-	return Boolean(channels.findOne({
+async function isAllowed(channel_id) {
+	var found = await channels.findOne({
 		where: {
 			id: channel_id,
 		},
-	}));
+	});
+	var bool = Boolean(found);
+	console.log(found);
+	console.log(bool);
+	return bool
 };
 
 /**

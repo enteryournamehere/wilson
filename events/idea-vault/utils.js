@@ -20,13 +20,17 @@ async function filterReaction(reaction) {
 	await reaction.message.fetch(true);
 	await reaction.fetch();
 
+//	console.log()
+//	console.log(reaction.message)
+	
 	if (!ideaVault.isEnabled(reaction.message.guild.id)) return false;
 	// If the category, or the specific channel is not allowed
-	if (!ideaVault.isAllowed(reaction.message.channel.parent?.id) &&
-		!ideaVault.isAllowed(reaction.message.channel.id)) {
+	if (!await ideaVault.isAllowed(reaction.message.channel.parent?.id) &&
+		!await ideaVault.isAllowed(reaction.message.channel.id)) {
+//		console.log(false)
 		return false;
 	}
-
+//	console.log(true)
 	// If people are reacting to posts
 	// EDIT: May not be needed because of the allowed code above?
 	// if (await ideaVault.getIdeaByPost(reaction.message.id)) return false;

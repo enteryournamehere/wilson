@@ -6,6 +6,7 @@ const utils = require('./utils');
 const secure = require('../../secure.json');
 
 async function messageReactionAdd(reaction, _user) {
+return
 	// This also fetches the reaction for us
 	if (!await utils.filterReaction(reaction)) return;
 
@@ -33,6 +34,7 @@ async function messageReactionAdd(reaction, _user) {
 }
 
 async function messageReactionRemove(reaction, _user) {
+return
 	// This also fetches the reaction for us
 	if (!await utils.filterReaction(reaction)) return;
 
@@ -66,7 +68,7 @@ async function channelUpdate(oldChannel, newChannel) {
 	if (oldChannel.name == newChannel.name) return;
 
 	const channel = newChannel.guild.channels.cache.get(secure.ideaVaultOrganizersChannel);
-	await channel.send(`{red}${oldChannel.name} has been renamed to ${newChannel.name}, beginning migrations.`);
+//	await channel.send(`{red}${oldChannel.name} has been renamed to ${newChannel.name}, beginning migrations.`);
 
 	// Rename in airtable
 	renameIssueCategory({ oldName: oldChannel.name, newName: newChannel.name }).error(async (err) => {
@@ -112,7 +114,9 @@ async function synchronizeAirtableCategorization(bot) {
 
 // This is a so-called function factory, it allows us to use Wilson in the ready
 function readyFactory(bot) {
+
 	async function ready() {
+	return
 		const unsyncedIdeas = await ideaVault.getUnsyncedIdeas();
 
 		if (unsyncedIdeas) {  // Synchronize ideas that failed to update on Airtable
@@ -142,8 +146,8 @@ async function messageUpdate(_oldMessage, message) {
 	if (!ideaVault.isEnabled(message.guild.id)) return;
 
 	// If the category, or the specific channel is not allowed
-	if (!ideaVault.isAllowed(message.channel.parent?.id) &&
-		!ideaVault.isAllowed(message.channel.id)) return;
+	if (!await ideaVault.isAllowed(message.channel.parent?.id) &&
+		!await ideaVault.isAllowed(message.channel.id)) return;
 
 	const idea = await ideaVault.getIdeaByMsg(message.id);
 	if (!idea) return;

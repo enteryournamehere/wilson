@@ -6,6 +6,7 @@ const airTable = require('../../utils/airtable');
 const locks = new (require('../../utils/lockkeeper'))();
 
 async function synchronize(idea, options) {
+	console.log(idea, options);
 	idea.airtable_updated = false;
 	idea.save();
 

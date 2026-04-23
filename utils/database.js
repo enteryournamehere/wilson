@@ -6,7 +6,7 @@ class WilsonDatabase {
 		this.db = new Sequelize(secure.dbName, secure.dbUser, secure.dbPassword, {
 			dialect: 'mysql',
 			port: 3306,
-			host: 'localhost',
+			host: '127.0.0.1',
 			provider: 'mysql',
 			logging: false,
 		});

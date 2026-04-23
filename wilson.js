@@ -182,7 +182,7 @@ function youtube2Fetch() {
 	Wilson.fetches.youtube.last = Date.now();
 	require('./utils/youtube2.js').fetch().then((x) => {
 		if (!x.new) return;
-		youtubeWebhook.send(`<@&${updatesConfig.roles.youtube}>`, x.embed).catch(() => { }).then(() => {
+		youtubeWebhook.send(`<@&${updatesConfig.roles.youtube}>${x.mainVideo ? ` <@&${updatesConfig.roles.youtubeMainVideos}>` : ''}`, x.embed).catch(() => { }).then(() => {
 			updates.addUpdate(
 				'youtube',
 				x.postid,
